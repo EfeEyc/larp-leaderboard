@@ -37,16 +37,18 @@ export function convertGoogleDriveUrl(url) {
 
 export function formatFileNameToTitle(fileName) {
   if (!fileName || typeof fileName !== 'string') return 'Untitled LARPer';
-  const nameWithoutExt = fileName.replace(/\.[^/.]+$/, "");
-  const cleanTitle = nameWithoutExt.replace(/[-_]/g, " ").replace(/\s+/g, " ").trim();
-  return cleanTitle || 'Untitled LARPer';
+  // Strip - Google Drive suffix if present
+  let clean = fileName.replace(/\s*-\s*Google Drive/i, '');
+  // Strip file extension
+  clean = clean.replace(/\.[^/.]+$/, "");
+  // Replace underscores and hyphens with spaces
+  clean = clean.replace(/[-_]/g, " ").replace(/\s+/g, " ").trim();
+  return clean || 'Untitled LARPer';
 }
 
-// Parse ONLY valid file IDs, strictly ignoring folder IDs
 export function parseGoogleDriveFileIds(text) {
   if (!text) return [];
 
-  // Extract folder ID if present to exclude it from file IDs
   const folderMatch = text.match(/\/folders\/([a-zA-Z0-9_-]+)/);
   const folderId = folderMatch ? folderMatch[1] : null;
 
@@ -62,7 +64,25 @@ export function parseGoogleDriveFileIds(text) {
   return Array.from(ids);
 }
 
-// Fetch all image file IDs inside a public Google Drive Folder
+// Automatically fetch the exact file name of a public Google Drive File ID
+export async function fetchGoogleDriveFileName(fileId) {
+  try {
+    const viewUrl = `https://drive.google.com/file/d/${fileId}/view`;
+    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(viewUrl)}`;
+    const res = await fetch(proxyUrl);
+    if (res.ok) {
+      const html = await res.text();
+      const matchTitle = html.match(/<title>([^<]+)<\/title>/i);
+      if (matchTitle && matchTitle[1]) {
+        return formatFileNameToTitle(matchTitle[1]);
+      }
+    }
+  } catch (err) {
+    console.warn(`Could not fetch file name for ID ${fileId}:`, err);
+  }
+  return null;
+}
+
 export async function fetchFilesFromGoogleDriveFolder(folderUrlOrId) {
   let folderId = folderUrlOrId.trim();
   const folderMatch = folderUrlOrId.match(/\/folders\/([a-zA-Z0-9_-]+)/);
@@ -79,8 +99,6 @@ export async function fetchFilesFromGoogleDriveFolder(folderUrlOrId) {
     
     if (res.ok) {
       const html = await res.text();
-      
-      // Parse file links inside the folder HTML
       const fileIdRegex = /\/file\/d\/([a-zA-Z0-9_-]+)/g;
       const foundIds = new Set();
       let match;
@@ -92,13 +110,14 @@ export async function fetchFilesFromGoogleDriveFolder(folderUrlOrId) {
       }
 
       let count = 1;
-      foundIds.forEach(id => {
+      for (const id of foundIds) {
+        const title = await fetchGoogleDriveFileName(id) || `Drive Photo #${count++}`;
         results.push({
           id,
-          name: `Drive Photo #${count++}`,
+          name: title,
           imageUrl: `https://lh3.googleusercontent.com/d/${id}=s1600`
         });
-      });
+      }
     }
   } catch (err) {
     console.warn('Failed to parse Google Drive folder via proxy:', err);

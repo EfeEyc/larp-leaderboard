@@ -5,11 +5,11 @@ import { renderTournamentVote, TournamentVoteManager } from './components/Tourna
 import { renderAdminPortal } from './components/AdminPortal.js';
 import { renderEntryModal } from './components/EntryModal.js';
 import { renderGoatLeaderboard, GoatVoteManager } from './components/GoatLeaderboard.js';
-import { convertGoogleDriveUrl, parseGoogleDriveFileIds, formatFileNameToTitle, fetchFilesFromGoogleDriveFolder } from './gdriveHelper.js';
+import { convertGoogleDriveUrl, parseGoogleDriveFileIds, formatFileNameToTitle, fetchFilesFromGoogleDriveFolder, fetchGoogleDriveFileName } from './gdriveHelper.js';
 import { compressImageFile } from './imageHelper.js';
 import { hashPassword, DEFAULT_ADMIN_HASH } from './cryptoHelper.js';
 
-const CURRENT_VERSION = 'v5.2.0';
+const CURRENT_VERSION = 'v5.3.0';
 
 class App {
   constructor() {
@@ -345,7 +345,7 @@ class App {
                 weekId: 'pending'
               });
             }
-            alert(`✓ Successfully imported ${folderFiles.length} photo(s) directly from your Google Drive folder!`);
+            alert(`✓ Successfully imported ${folderFiles.length} photo(s) with exact names from your Google Drive folder!`);
             this.render();
             return;
           }
@@ -353,15 +353,17 @@ class App {
 
         const ids = parseGoogleDriveFileIds(linksPasted);
         if (ids.length > 0) {
-          ids.forEach(async (id, idx) => {
+          for (let i = 0; i < ids.length; i++) {
+            const id = ids[i];
             const embedUrl = `https://lh3.googleusercontent.com/d/${id}=s1600`;
+            const realName = await fetchGoogleDriveFileName(id);
             await storage.addOrUpdateEntry({
-              title: `Drive LARPer #${idx + 1}`,
+              title: realName || `Drive LARPer #${i + 1}`,
               imageUrl: embedUrl,
               weekId: 'pending'
             });
-          });
-          alert(`✓ Successfully imported ${ids.length} Google Drive photo(s) into your pending roster!`);
+          }
+          alert(`✓ Successfully imported ${ids.length} Google Drive photo(s) with exact names into your pending roster!`);
           this.render();
         } else {
           alert('Could not detect photo file IDs.\n\nTo import multiple photos at once:\n1. Open your folder in Google Drive\n2. Select photos -> Right-click -> Copy links\n3. Paste the links here!');
@@ -378,7 +380,7 @@ class App {
       }
 
       const btn = document.getElementById('btn-import-batch-gdrive');
-      if (btn) btn.innerHTML = '⌛ Processing Google Drive Links...';
+      if (btn) btn.innerHTML = '⌛ Fetching Photo Names & Processing...';
 
       if (text.includes('/folders/')) {
         const folderFiles = await fetchFilesFromGoogleDriveFolder(text);
@@ -390,7 +392,7 @@ class App {
               weekId: 'pending'
             });
           }
-          alert(`✓ Successfully imported ${folderFiles.length} photo(s) directly from your Google Drive folder!`);
+          alert(`✓ Successfully imported ${folderFiles.length} photo(s) with exact names from your Google Drive folder!`);
           document.getElementById('input-batch-gdrive-links').value = '';
           if (btn) btn.innerHTML = '⚡ IMPORT ALL GOOGLE DRIVE LINKS / FOLDERS';
           this.render();
@@ -409,15 +411,18 @@ class App {
       for (let i = 0; i < ids.length; i++) {
         const id = ids[i];
         const embedUrl = `https://lh3.googleusercontent.com/d/${id}=s1600`;
+        const realName = await fetchGoogleDriveFileName(id);
+        const title = realName || `Drive LARPer ${i + 1}`;
+        
         await storage.addOrUpdateEntry({
-          title: `Drive LARPer ${i + 1}`,
+          title,
           imageUrl: embedUrl,
           weekId: 'pending'
         });
         count++;
       }
 
-      alert(`✓ Successfully imported ${count} Google Drive photo(s) into your pending roster!`);
+      alert(`✓ Successfully imported ${count} Google Drive photo(s) with exact names!`);
       document.getElementById('input-batch-gdrive-links').value = '';
       if (btn) btn.innerHTML = '⚡ IMPORT ALL GOOGLE DRIVE LINKS / FOLDERS';
       this.render();
