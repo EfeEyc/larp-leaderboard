@@ -5,11 +5,11 @@ import { renderTournamentVote, TournamentVoteManager } from './components/Tourna
 import { renderAdminPortal } from './components/AdminPortal.js';
 import { renderEntryModal } from './components/EntryModal.js';
 import { renderGoatLeaderboard, GoatVoteManager } from './components/GoatLeaderboard.js';
-import { convertGoogleDriveUrl, parseGoogleDriveFileIds, formatFileNameToTitle } from './gdriveHelper.js';
+import { convertGoogleDriveUrl, parseGoogleDriveFileIds, formatFileNameToTitle, fetchFilesFromGoogleDriveFolder } from './gdriveHelper.js';
 import { compressImageFile } from './imageHelper.js';
 import { hashPassword, DEFAULT_ADMIN_HASH } from './cryptoHelper.js';
 
-const CURRENT_VERSION = 'v5.0.0';
+const CURRENT_VERSION = 'v5.1.0';
 
 class App {
   constructor() {
@@ -22,7 +22,7 @@ class App {
     this.goatSortBy = 'wins';
     this.goatSubTab = 'rankings';
 
-    this.uploadMode = 'gdrive'; // 'gdrive' | 'file' | 'url'
+    this.uploadMode = 'gdrive';
     this.selectedImageFiles = [];
 
     this.selectedEntryModal = null;
@@ -301,7 +301,7 @@ class App {
       }
     });
 
-    // Upload Mode Switcher (Google Drive vs File vs URL)
+    // Upload Mode Switcher
     const setUploadMode = (mode) => {
       this.uploadMode = mode;
       document.getElementById('section-upload-gdrive')?.classList.toggle('hidden', mode !== 'gdrive');
@@ -332,15 +332,31 @@ class App {
     document.getElementById('upload-tab-url')?.addEventListener('click', () => setUploadMode('url'));
 
     // Google Drive Picker Button
-    document.getElementById('btn-open-gdrive-picker')?.addEventListener('click', () => {
-      const linksPasted = prompt('☁️ Paste your Google Drive photo share link(s) or folder link below:\n\n(Tip: You can paste multiple links separated by spaces or new lines!)');
+    document.getElementById('btn-open-gdrive-picker')?.addEventListener('click', async () => {
+      const linksPasted = prompt('☁️ Paste your Google Drive folder link or photo share link(s) below:\n\nExample: https://drive.google.com/drive/folders/1ABC...');
       if (linksPasted) {
+        if (linksPasted.includes('/folders/')) {
+          const folderFiles = await fetchFilesFromGoogleDriveFolder(linksPasted);
+          if (folderFiles.length > 0) {
+            for (const item of folderFiles) {
+              await storage.addOrUpdateEntry({
+                title: item.name,
+                imageUrl: item.imageUrl,
+                weekId: 'pending'
+              });
+            }
+            alert(`✓ Successfully imported ${folderFiles.length} photo(s) directly from your Google Drive folder!`);
+            this.render();
+            return;
+          }
+        }
+
         const ids = parseGoogleDriveFileIds(linksPasted);
         if (ids.length > 0) {
           ids.forEach(async (id, idx) => {
             const embedUrl = `https://lh3.googleusercontent.com/d/${id}=s1600`;
             await storage.addOrUpdateEntry({
-              title: `Google Drive LARPer #${idx + 1}`,
+              title: `Drive LARPer #${idx + 1}`,
               imageUrl: embedUrl,
               weekId: 'pending'
             });
@@ -348,17 +364,44 @@ class App {
           alert(`✓ Successfully imported ${ids.length} Google Drive photo(s) into your pending roster!`);
           this.render();
         } else {
-          alert('Could not detect valid Google Drive file IDs. Please check your links!');
+          alert('Could not detect valid Google Drive file or folder IDs. Make sure folder share permission is set to "Anyone with the link can view"!');
         }
       }
     });
 
-    // Batch Google Drive Link Import Button
+    // Batch Google Drive Link / Folder Import Button
     document.getElementById('btn-import-batch-gdrive')?.addEventListener('click', async () => {
       const text = document.getElementById('input-batch-gdrive-links')?.value || '';
+      if (!text) {
+        alert('Please paste a Google Drive folder link or share link(s)!');
+        return;
+      }
+
+      const btn = document.getElementById('btn-import-batch-gdrive');
+      if (btn) btn.innerHTML = '⌛ Scanning Google Drive Folder...';
+
+      if (text.includes('/folders/')) {
+        const folderFiles = await fetchFilesFromGoogleDriveFolder(text);
+        if (folderFiles.length > 0) {
+          for (const item of folderFiles) {
+            await storage.addOrUpdateEntry({
+              title: item.name,
+              imageUrl: item.imageUrl,
+              weekId: 'pending'
+            });
+          }
+          alert(`✓ Successfully imported ${folderFiles.length} photo(s) directly from your Google Drive folder!`);
+          document.getElementById('input-batch-gdrive-links').value = '';
+          if (btn) btn.innerHTML = '⚡ IMPORT ALL GOOGLE DRIVE LINKS / FOLDERS';
+          this.render();
+          return;
+        }
+      }
+
       const ids = parseGoogleDriveFileIds(text);
       if (ids.length === 0) {
-        alert('Please paste one or more Google Drive share links!');
+        alert('Could not detect valid Google Drive file or folder IDs. Make sure your Google Drive folder permission is set to "Anyone with the link can view"!');
+        if (btn) btn.innerHTML = '⚡ IMPORT ALL GOOGLE DRIVE LINKS / FOLDERS';
         return;
       }
 
@@ -376,6 +419,7 @@ class App {
 
       alert(`✓ Successfully imported ${count} Google Drive photo(s) into your pending roster!`);
       document.getElementById('input-batch-gdrive-links').value = '';
+      if (btn) btn.innerHTML = '⚡ IMPORT ALL GOOGLE DRIVE LINKS / FOLDERS';
       this.render();
     });
 
