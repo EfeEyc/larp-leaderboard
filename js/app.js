@@ -20,14 +20,12 @@ class App {
   async init() {
     await storage.init();
     
-    // Check initial route or vote status
     this.checkInitialRoute();
 
     this.tourneyManager = new TournamentVoteManager(
       storage,
       () => this.render(),
       (champion) => {
-        // Tournament finished for current week!
         this.render();
       }
     );
@@ -36,7 +34,6 @@ class App {
       this.render();
     });
 
-    // Listen for hash routing (e.g. #admin or /admin)
     window.addEventListener('hashchange', () => {
       this.checkInitialRoute();
       this.render();
@@ -53,7 +50,6 @@ class App {
     if (hash === '#admin' || hash === '#/admin' || search.includes('page=admin')) {
       this.activeTab = 'admin';
     } else {
-      // Always play Would You Rather 1v1 on first access if not voted this week!
       const hasVoted = storage.hasVotedCurrentWeek();
       if (!hasVoted) {
         this.activeTab = 'tournament';
@@ -99,7 +95,6 @@ class App {
   }
 
   rebindDOMEvents() {
-    // Header Tab Switches
     document.getElementById('tab-btn-leaderboard')?.addEventListener('click', () => this.setTab('leaderboard'));
     document.getElementById('tab-btn-tournament')?.addEventListener('click', () => this.setTab('tournament'));
     document.getElementById('nav-logo')?.addEventListener('click', () => this.setTab('leaderboard'));
@@ -107,17 +102,14 @@ class App {
     document.getElementById('mob-btn-leaderboard')?.addEventListener('click', () => this.setTab('leaderboard'));
     document.getElementById('mob-btn-tournament')?.addEventListener('click', () => this.setTab('tournament'));
 
-    // Mobile Drawer Toggle
     document.getElementById('mobile-menu-btn')?.addEventListener('click', () => {
       const drawer = document.getElementById('mobile-drawer');
       if (drawer) drawer.classList.toggle('hidden');
     });
 
-    // Go to leaderboard buttons from tournament screens
     document.getElementById('btn-goto-leaderboard')?.addEventListener('click', () => this.setTab('leaderboard'));
     document.getElementById('btn-goto-leaderboard-from-voted')?.addEventListener('click', () => this.setTab('leaderboard'));
 
-    // Leaderboard Category Chips
     document.querySelectorAll('.btn-category-chip').forEach(btn => {
       btn.addEventListener('click', (e) => {
         this.filterCategory = e.currentTarget.dataset.category;
@@ -125,7 +117,6 @@ class App {
       });
     });
 
-    // Leaderboard Search
     const searchInput = document.getElementById('search-input');
     if (searchInput) {
       searchInput.addEventListener('input', (e) => {
@@ -134,7 +125,6 @@ class App {
       });
     }
 
-    // Leaderboard Sort
     const sortSelect = document.getElementById('sort-select');
     if (sortSelect) {
       sortSelect.addEventListener('change', (e) => {
@@ -143,7 +133,6 @@ class App {
       });
     }
 
-    // Entry Click -> Modal
     document.querySelectorAll('[data-entry-id]').forEach(card => {
       if (card.classList.contains('battle-card') || card.closest('.battle-card')) return;
       card.addEventListener('click', () => {
@@ -153,7 +142,6 @@ class App {
       });
     });
 
-    // Close Modal
     document.getElementById('modal-close-btn')?.addEventListener('click', () => {
       this.selectedEntryModal = null;
       this.render();
@@ -165,7 +153,6 @@ class App {
       }
     });
 
-    // Tournament Voting Cards
     document.getElementById('card-vote-a')?.addEventListener('click', (e) => {
       const winnerId = e.currentTarget.dataset.entryId;
       const loserId = e.currentTarget.dataset.loserId;
@@ -200,6 +187,17 @@ class App {
       }
     });
 
+    // Change Password Form
+    document.getElementById('form-change-password')?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const newPass = document.getElementById('input-new-pass').value;
+      if (newPass) {
+        storage.updateConfig({ adminPassword: newPass });
+        alert('✓ Admin password updated successfully! Remember to export your data.json if using static GitHub Pages hosting.');
+        this.render();
+      }
+    });
+
     // Advance Weekly Rotation Button in Admin
     document.getElementById('btn-advance-week')?.addEventListener('click', () => {
       const newTitle = prompt('Enter a title for the new weekly roster:', `Week ${Date.now()}`);
@@ -230,14 +228,10 @@ class App {
     document.getElementById('form-entry-add')?.addEventListener('submit', async (e) => {
       e.preventDefault();
       const title = document.getElementById('entry-title').value;
-      const category = document.getElementById('entry-category').value;
-      const faction = document.getElementById('entry-faction').value;
-      const elo = parseInt(document.getElementById('entry-elo').value, 10) || 1200;
       const imageUrl = document.getElementById('entry-image-url').value;
-      const lore = document.getElementById('entry-lore').value;
 
       await storage.addOrUpdateEntry({
-        title, category, faction, elo, imageUrl, lore
+        title, imageUrl
       });
 
       alert(`✓ Successfully saved "${title}" to LARP Leaderboard!`);

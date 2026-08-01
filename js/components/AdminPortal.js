@@ -46,7 +46,7 @@ export function renderAdminPortal(storage, isAuthenticated) {
             <span class="text-xl">👑</span>
             <h2 class="font-cinzel text-2xl font-bold text-gradient-gold">ADMINISTRATION DASHBOARD</h2>
           </div>
-          <p class="text-xs text-slate-400 mt-1">Upload LARPers (Name + Image), manage weekly rosters, configure Firebase, export data.</p>
+          <p class="text-xs text-slate-400 mt-1">Upload LARPers (Name + Image), manage weekly rosters, configure password & Firebase.</p>
         </div>
 
         <div class="flex flex-wrap items-center gap-3">
@@ -76,15 +76,13 @@ export function renderAdminPortal(storage, isAuthenticated) {
         </p>
       </div>
 
-      <!-- Add New LARP Material Form (Strictly Name & Image Link) -->
+      <!-- Add New LARP Material Form -->
       <div class="glass-panel p-8 rounded-3xl space-y-6">
         <h3 class="font-cinzel text-xl font-bold text-amber-300 border-b border-white/10 pb-3 flex items-center space-x-2">
           <span>➕</span><span>UPLOAD NEW LARPER</span>
         </h3>
 
         <form id="form-entry-add" class="space-y-6">
-          
-          <!-- Name Input -->
           <div class="space-y-1">
             <label class="text-xs font-mono text-slate-300">LARPer / Material Name *</label>
             <input 
@@ -96,7 +94,6 @@ export function renderAdminPortal(storage, isAuthenticated) {
             />
           </div>
 
-          <!-- Image Link Input with GDrive Auto Converter -->
           <div class="space-y-2">
             <div class="flex justify-between items-center">
               <label class="text-xs font-mono text-slate-300">Image Source (Google Drive Share Link or Web Direct URL) *</label>
@@ -125,6 +122,22 @@ export function renderAdminPortal(storage, isAuthenticated) {
 
           <button type="submit" class="w-full py-4 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-300 text-slate-950 font-black font-cinzel text-base shadow-xl shadow-amber-500/20">
             💾 UPLOAD LARPER TO LEADERBOARD
+          </button>
+        </form>
+      </div>
+
+      <!-- Security: Change Admin Password Panel -->
+      <div class="glass-panel p-8 rounded-3xl space-y-6 border border-amber-500/30">
+        <h3 class="font-cinzel text-xl font-bold text-amber-400 border-b border-white/10 pb-3 flex items-center space-x-2">
+          <span>🔑</span><span>CHANGE ADMIN PASSWORD</span>
+        </h3>
+        <form id="form-change-password" class="space-y-4 max-w-md">
+          <div class="space-y-1">
+            <label class="text-xs font-mono text-slate-300">New Admin Password</label>
+            <input type="password" id="input-new-pass" required placeholder="Enter new secret password" class="w-full bg-slate-950 border border-white/15 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500" />
+          </div>
+          <button type="submit" class="px-6 py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold font-mono text-xs rounded-xl shadow-lg shadow-amber-500/20">
+            🔒 UPDATE ADMIN PASSWORD
           </button>
         </form>
       </div>
