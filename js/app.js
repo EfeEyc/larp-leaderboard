@@ -174,7 +174,7 @@ class App {
       }, 1200);
     });
 
-    // Admin Auth Form with SHA-256 password hash comparison
+    // Admin Auth Form
     document.getElementById('admin-auth-form')?.addEventListener('submit', async (e) => {
       e.preventDefault();
       const inputPass = document.getElementById('admin-pass-input').value;
@@ -190,14 +190,27 @@ class App {
       }
     });
 
-    // Change Password Form using SHA-256 Hash
+    // Lockscreen Password Change Form
+    document.getElementById('form-lockscreen-change-password')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const newPass = document.getElementById('input-lockscreen-new-pass').value;
+      if (newPass) {
+        const newHash = await hashPassword(newPass);
+        storage.updateConfig({ adminPasswordHash: newHash });
+        this.isAdminAuthenticated = true;
+        alert('✓ New admin password set! Admin dashboard unlocked.');
+        this.render();
+      }
+    });
+
+    // Change Password Form inside Dashboard
     document.getElementById('form-change-password')?.addEventListener('submit', async (e) => {
       e.preventDefault();
       const newPass = document.getElementById('input-new-pass').value;
       if (newPass) {
         const newHash = await hashPassword(newPass);
         storage.updateConfig({ adminPasswordHash: newHash });
-        alert('✓ Admin password securely hashed and updated! Your plain password is never exposed in the repository.');
+        alert('✓ Admin password updated successfully!');
         this.render();
       }
     });

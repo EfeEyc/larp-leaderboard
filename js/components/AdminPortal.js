@@ -6,17 +6,19 @@ export function renderAdminPortal(storage, isAuthenticated) {
   const entries = storage.getEntries();
   const activeWeek = storage.getActiveWeek();
 
-  // Password Lock Screen if not authenticated
+  // If not authenticated, show Lock Screen AND instant Password Change Option right here!
   if (!isAuthenticated) {
     return `
-      <div class="max-w-md mx-auto px-4 py-16">
+      <div class="max-w-md mx-auto px-4 py-12 space-y-6">
+        
+        <!-- Lock Screen Login Card -->
         <div class="glass-panel p-8 rounded-3xl border border-amber-500/30 text-center space-y-6">
           <div class="w-16 h-16 mx-auto rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-3xl">
             👑
           </div>
           <div>
             <h2 class="font-cinzel text-2xl font-bold text-white">ADMIN PORTAL LOGIN</h2>
-            <p class="text-xs text-slate-400 mt-1">Unlock with your admin password to access roster management & security settings.</p>
+            <p class="text-xs text-slate-400 mt-1">Unlock with your admin password to manage rosters & materials.</p>
             <p class="text-[11px] text-amber-400 font-mono mt-2">Default Password: <strong>admin</strong></p>
           </div>
           <form id="admin-auth-form" class="space-y-4">
@@ -32,6 +34,27 @@ export function renderAdminPortal(storage, isAuthenticated) {
             </button>
           </form>
         </div>
+
+        <!-- Direct Change / Set Password Card -->
+        <div class="glass-panel p-6 rounded-3xl border border-white/10 text-center space-y-4">
+          <h3 class="font-cinzel text-sm font-bold text-amber-400 flex items-center justify-center space-x-2">
+            <span>🔑</span><span>SET NEW ADMIN PASSWORD</span>
+          </h3>
+          <p class="text-xs text-slate-400">Want to create a custom password now? Enter your new password below:</p>
+          <form id="form-lockscreen-change-password" class="space-y-3">
+            <input 
+              type="password" 
+              id="input-lockscreen-new-pass" 
+              placeholder="Type your new secret password" 
+              class="w-full bg-slate-950 border border-white/15 rounded-xl px-4 py-2.5 text-xs text-white text-center placeholder-gray-500 focus:outline-none focus:border-amber-500"
+              required
+            />
+            <button type="submit" class="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 font-bold font-mono text-xs border border-amber-500/30">
+              🔒 SET NEW PASSWORD & LOGIN
+            </button>
+          </form>
+        </div>
+
       </div>
     `;
   }
@@ -133,7 +156,6 @@ export function renderAdminPortal(storage, isAuthenticated) {
         <h3 class="font-cinzel text-xl font-bold text-amber-400 border-b border-white/10 pb-3 flex items-center space-x-2">
           <span>🔑</span><span>CHANGE ADMIN PASSWORD</span>
         </h3>
-        <p class="text-xs text-slate-300">Set a new secret admin password. It will be stored as an irreversible SHA-256 hash.</p>
         <form id="form-change-password" class="space-y-4 max-w-md">
           <div class="space-y-1">
             <label class="text-xs font-mono text-slate-300">New Admin Password</label>
