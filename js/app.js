@@ -9,7 +9,7 @@ import { convertGoogleDriveUrl, parseGoogleDriveFileIds, formatFileNameToTitle, 
 import { compressImageFile } from './imageHelper.js';
 import { hashPassword, DEFAULT_ADMIN_HASH } from './cryptoHelper.js';
 
-const CURRENT_VERSION = 'v5.4.0';
+const CURRENT_VERSION = 'v6.0.0';
 
 class App {
   constructor() {
@@ -24,6 +24,7 @@ class App {
 
     this.uploadMode = 'gdrive';
     this.selectedImageFiles = [];
+    this.pendingBatchDriveItems = null;
 
     this.selectedEntryModal = null;
     this.isAdminAuthenticated = false;
@@ -116,7 +117,7 @@ class App {
       const activatedEntries = entries.filter(e => e.weekId && e.weekId !== 'pending');
       mainContent = renderGoatLeaderboard(activatedEntries, this.goatSearchQuery, this.goatSortBy, this.goatSubTab, this.goatManager, storage);
     } else if (this.activeTab === 'admin') {
-      mainContent = renderAdminPortal(storage, this.isAdminAuthenticated);
+      mainContent = renderAdminPortal(storage, this.isAdminAuthenticated, this.pendingBatchDriveItems);
     }
 
     const modalContent = this.selectedEntryModal ? renderEntryModal(this.selectedEntryModal) : '';
@@ -331,43 +332,53 @@ class App {
     document.getElementById('upload-tab-file')?.addEventListener('click', () => setUploadMode('file'));
     document.getElementById('upload-tab-url')?.addEventListener('click', () => setUploadMode('url'));
 
+    // Helper to open Batch Naming Modal for Google Drive File IDs
+    const openBatchNamingModalForDriveText = async (text) => {
+      if (!text) return;
+      
+      let items = [];
+
+      if (text.includes('/folders/')) {
+        const folderFiles = await fetchFilesFromGoogleDriveFolder(text);
+        if (folderFiles.length > 0) {
+          items = folderFiles.map(f => ({
+            id: f.id,
+            imageUrl: f.imageUrl,
+            title: f.name || 'Untitled LARPer'
+          }));
+        }
+      }
+
+      if (items.length === 0) {
+        const ids = parseGoogleDriveFileIds(text);
+        if (ids.length === 0) {
+          alert('Could not detect photo file IDs.\n\nTo import multiple photos at once:\n1. Open your folder in Google Drive\n2. Select photos -> Right-click -> Copy links\n3. Paste the links here!');
+          return;
+        }
+
+        for (let i = 0; i < ids.length; i++) {
+          const id = ids[i];
+          const embedUrl = `https://lh3.googleusercontent.com/d/${id}=s1600`;
+          const realName = await fetchGoogleDriveFileName(id);
+          items.push({
+            id,
+            imageUrl: embedUrl,
+            title: realName || `LARPer #${i + 1}`
+          });
+        }
+      }
+
+      if (items.length > 0) {
+        this.pendingBatchDriveItems = items;
+        this.render();
+      }
+    };
+
     // Google Drive Quick Prompt Button
     document.getElementById('btn-open-gdrive-picker')?.addEventListener('click', async () => {
       const linksPasted = prompt('☁️ Paste your Google Drive photo share link(s) or folder link below:\n\nExample: https://drive.google.com/file/d/1ABC...');
       if (linksPasted) {
-        if (linksPasted.includes('/folders/')) {
-          const folderFiles = await fetchFilesFromGoogleDriveFolder(linksPasted);
-          if (folderFiles.length > 0) {
-            for (const item of folderFiles) {
-              await storage.addOrUpdateEntry({
-                title: item.name,
-                imageUrl: item.imageUrl,
-                weekId: 'pending'
-              });
-            }
-            alert(`✓ Successfully imported ${folderFiles.length} photo(s) with exact names from your Google Drive folder!`);
-            this.render();
-            return;
-          }
-        }
-
-        const ids = parseGoogleDriveFileIds(linksPasted);
-        if (ids.length > 0) {
-          for (let i = 0; i < ids.length; i++) {
-            const id = ids[i];
-            const embedUrl = `https://lh3.googleusercontent.com/d/${id}=s1600`;
-            const realName = await fetchGoogleDriveFileName(id);
-            await storage.addOrUpdateEntry({
-              title: realName || `Drive LARPer #${i + 1}`,
-              imageUrl: embedUrl,
-              weekId: 'pending'
-            });
-          }
-          alert(`✓ Successfully imported ${ids.length} Google Drive photo(s) into your pending roster!`);
-          this.render();
-        } else {
-          alert('Could not detect photo file IDs.\n\nTo import multiple photos at once:\n1. Open your folder in Google Drive\n2. Select photos -> Right-click -> Copy links\n3. Paste the links here!');
-        }
+        await openBatchNamingModalForDriveText(linksPasted);
       }
     });
 
@@ -378,53 +389,52 @@ class App {
         alert('Please paste one or more Google Drive photo share links!');
         return;
       }
-
       const btn = document.getElementById('btn-import-batch-gdrive');
-      if (btn) btn.innerHTML = '⌛ Fetching Photo Names from Google Drive...';
+      if (btn) btn.innerHTML = '⌛ Preparing Naming Window...';
+      await openBatchNamingModalForDriveText(text);
+    });
 
-      if (text.includes('/folders/')) {
-        const folderFiles = await fetchFilesFromGoogleDriveFolder(text);
-        if (folderFiles.length > 0) {
-          for (const item of folderFiles) {
-            await storage.addOrUpdateEntry({
-              title: item.name,
-              imageUrl: item.imageUrl,
-              weekId: 'pending'
-            });
-          }
-          alert(`✓ Successfully imported ${folderFiles.length} photo(s) with exact names from your Google Drive folder!`);
-          document.getElementById('input-batch-gdrive-links').value = '';
-          if (btn) btn.innerHTML = '⚡ IMPORT ALL GOOGLE DRIVE LINKS / FOLDERS';
-          this.render();
-          return;
+    // Batch Naming Window Modal Handlers
+    document.querySelectorAll('.batch-name-input').forEach(input => {
+      input.addEventListener('input', (e) => {
+        const idx = parseInt(e.target.dataset.batchIdx, 10);
+        if (this.pendingBatchDriveItems && this.pendingBatchDriveItems[idx]) {
+          this.pendingBatchDriveItems[idx].title = e.target.value;
         }
-      }
+      });
+    });
 
-      const ids = parseGoogleDriveFileIds(text);
-      if (ids.length === 0) {
-        alert('Could not detect photo file IDs.\n\nTo import multiple photos at once:\n1. Open your folder in Google Drive\n2. Select all photos -> Right-click -> Copy links\n3. Paste the links here!');
-        if (btn) btn.innerHTML = '⚡ IMPORT ALL GOOGLE DRIVE LINKS / FOLDERS';
-        return;
-      }
+    document.getElementById('btn-confirm-batch-import')?.addEventListener('click', async () => {
+      if (!this.pendingBatchDriveItems || this.pendingBatchDriveItems.length === 0) return;
+
+      const itemsToSave = [...this.pendingBatchDriveItems];
+      const confirmBtn = document.getElementById('btn-confirm-batch-import');
+      if (confirmBtn) confirmBtn.innerHTML = '⌛ Saving to Roster Pool...';
 
       let count = 0;
-      for (let i = 0; i < ids.length; i++) {
-        const id = ids[i];
-        const embedUrl = `https://lh3.googleusercontent.com/d/${id}=s1600`;
-        const realName = await fetchGoogleDriveFileName(id);
-        const title = realName || `Drive LARPer ${i + 1}`;
-        
+      for (const item of itemsToSave) {
         await storage.addOrUpdateEntry({
-          title,
-          imageUrl: embedUrl,
+          title: item.title.trim() || 'Untitled LARPer',
+          imageUrl: item.imageUrl,
           weekId: 'pending'
         });
         count++;
       }
 
-      alert(`✓ Successfully imported ${count} Google Drive photo(s)!`);
-      document.getElementById('input-batch-gdrive-links').value = '';
-      if (btn) btn.innerHTML = '⚡ IMPORT ALL GOOGLE DRIVE LINKS / FOLDERS';
+      alert(`✓ Successfully saved ${count} custom-named LARPers to your pending roster pool!`);
+      this.pendingBatchDriveItems = null;
+      if (document.getElementById('input-batch-gdrive-links')) {
+        document.getElementById('input-batch-gdrive-links').value = '';
+      }
+      this.render();
+    });
+
+    document.getElementById('btn-cancel-batch')?.addEventListener('click', () => {
+      this.pendingBatchDriveItems = null;
+      this.render();
+    });
+    document.getElementById('btn-close-batch-modal')?.addEventListener('click', () => {
+      this.pendingBatchDriveItems = null;
       this.render();
     });
 

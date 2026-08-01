@@ -1,7 +1,7 @@
 import { convertGoogleDriveUrl } from '../gdriveHelper.js';
 import { firebaseService } from '../firebaseService.js';
 
-export function renderAdminPortal(storage, isAuthenticated) {
+export function renderAdminPortal(storage, isAuthenticated, pendingBatchDriveItems = null) {
   const config = storage.getConfig();
   const entries = storage.getEntries();
   const activeWeek = storage.getActiveWeek();
@@ -103,35 +103,35 @@ export function renderAdminPortal(storage, isAuthenticated) {
           </button>
         </div>
 
-        <!-- Section 1: Google Drive Picker Mode -->
+        <!-- Section 1: Google Drive Mode -->
         <div id="section-upload-gdrive" class="space-y-4">
           <div class="p-6 bg-slate-950/80 rounded-2xl border border-amber-500/30 text-center space-y-4">
             <div class="w-16 h-16 mx-auto rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-3xl">
               ☁️
             </div>
             <div>
-              <h4 class="font-cinzel text-lg font-bold text-white">Select Photos Directly from Google Drive</h4>
+              <h4 class="font-cinzel text-lg font-bold text-white">Import Photos from Google Drive</h4>
               <p class="text-xs text-slate-400 font-mono mt-1">
-                Select one or multiple photos from your Google Drive. Names will automatically be set to the file names!
+                Paste your Google Drive share links or folder link below to open the interactive naming window!
               </p>
             </div>
 
             <button type="button" id="btn-open-gdrive-picker" class="px-8 py-3.5 bg-gradient-to-r from-amber-500 to-yellow-300 text-slate-950 font-black font-cinzel text-sm rounded-xl shadow-lg shadow-amber-500/20 hover:scale-105 transition-transform inline-flex items-center space-x-2">
-              <span>☁️ OPEN GOOGLE DRIVE PICKER</span>
+              <span>☁️ PASTE DRIVE LINKS & SET NAMES</span>
             </button>
           </div>
 
-          <!-- Batch Drive Link Paste Fallback -->
+          <!-- Batch Drive Link Paste Form -->
           <div class="p-4 bg-slate-950/60 rounded-2xl border border-white/10 space-y-3">
-            <label class="text-xs font-mono text-amber-300 font-bold block">Or Paste Multiple Google Drive Share Links / Folder Links at Once:</label>
+            <label class="text-xs font-mono text-amber-300 font-bold block">Paste Google Drive Share Link(s) or Folder Link:</label>
             <textarea 
               id="input-batch-gdrive-links" 
               rows="3" 
-              placeholder="Paste one or more Google Drive share links (e.g. https://drive.google.com/file/d/1A2b3C.../view)..." 
+              placeholder="Paste one or more Google Drive links (e.g. https://drive.google.com/file/d/1A2b3C.../view)..." 
               class="w-full bg-slate-950 border border-white/15 rounded-xl px-4 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-amber-500 font-mono"
             ></textarea>
-            <button type="button" id="btn-import-batch-gdrive" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 font-mono text-xs font-bold rounded-xl">
-              ⚡ IMPORT ALL GOOGLE DRIVE LINKS
+            <button type="button" id="btn-import-batch-gdrive" class="w-full py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-cinzel text-xs font-black rounded-xl shadow-md">
+              ✨ OPEN PHOTO NAMING WINDOW FOR IMPORTS
             </button>
           </div>
         </div>
@@ -172,7 +172,7 @@ export function renderAdminPortal(storage, isAuthenticated) {
           </button>
         </div>
 
-        <!-- Section 3: Web URL / Single Link Mode -->
+        <!-- Section 3: Web URL Mode -->
         <div id="section-upload-url" class="hidden space-y-4">
           <form id="form-entry-add-url" class="space-y-4">
             <div class="space-y-1">
@@ -288,6 +288,56 @@ export function renderAdminPortal(storage, isAuthenticated) {
           </div>
         </form>
       </div>
+
+      <!-- Batch Naming Window Modal for Google Drive Imports -->
+      ${pendingBatchDriveItems && pendingBatchDriveItems.length > 0 ? `
+        <div id="modal-gdrive-batch" class="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in">
+          <div class="glass-panel p-6 sm:p-8 rounded-3xl max-w-3xl w-full max-h-[85vh] flex flex-col space-y-6 border-2 border-amber-500/50 shadow-2xl">
+            
+            <div class="flex justify-between items-center border-b border-white/10 pb-4">
+              <div>
+                <span class="text-xs font-mono text-amber-400 uppercase tracking-widest font-bold">GOOGLE DRIVE BATCH IMPORT</span>
+                <h3 class="font-cinzel text-xl sm:text-2xl font-bold text-white">NAME YOUR IMPORTED LARPERS (${pendingBatchDriveItems.length})</h3>
+              </div>
+              <button id="btn-close-batch-modal" class="w-9 h-9 rounded-xl bg-slate-900 border border-white/10 flex items-center justify-center text-slate-400 hover:text-white font-bold text-lg">
+                &times;
+              </button>
+            </div>
+
+            <p class="text-xs text-slate-300">Type or edit the name for each photo below before saving to your pending roster pool:</p>
+
+            <div id="batch-items-list" class="flex-1 overflow-y-auto space-y-3 pr-2">
+              ${pendingBatchDriveItems.map((item, idx) => `
+                <div class="p-3 bg-slate-900/90 rounded-2xl border border-white/10 flex items-center space-x-4">
+                  <div class="w-16 h-16 rounded-xl overflow-hidden border border-white/10 shrink-0 bg-slate-950 flex items-center justify-center">
+                    <img src="${item.imageUrl}" alt="Photo ${idx + 1}" class="w-full h-full object-contain" />
+                  </div>
+                  <div class="flex-1 space-y-1">
+                    <label class="text-[10px] font-mono text-amber-400 font-bold block">Photo #${idx + 1} Name *</label>
+                    <input 
+                      type="text" 
+                      data-batch-idx="${idx}"
+                      value="${item.title}" 
+                      placeholder="e.g. Sir Cedric of Oakhaven" 
+                      class="batch-name-input w-full bg-slate-950 border border-white/15 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500 font-cinzel font-bold" 
+                    />
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+
+            <div class="border-t border-white/10 pt-4 flex justify-between items-center">
+              <button id="btn-cancel-batch" class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 border border-white/10 text-slate-300 text-xs font-mono rounded-xl">
+                Cancel
+              </button>
+              <button id="btn-confirm-batch-import" class="px-8 py-3.5 bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-300 text-slate-950 font-black font-cinzel text-sm rounded-xl shadow-xl shadow-amber-500/30 hover:scale-105 transition-transform">
+                💾 CONFIRM & SAVE ALL (${pendingBatchDriveItems.length}) TO ROSTER
+              </button>
+            </div>
+
+          </div>
+        </div>
+      ` : ''}
 
     </div>
   `;
