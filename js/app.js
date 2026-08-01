@@ -8,7 +8,7 @@ import { renderGoatLeaderboard, GoatVoteManager } from './components/GoatLeaderb
 import { convertGoogleDriveUrl } from './gdriveHelper.js';
 import { hashPassword, DEFAULT_ADMIN_HASH } from './cryptoHelper.js';
 
-const CURRENT_VERSION = 'v3.2.0';
+const CURRENT_VERSION = 'v3.3.0';
 
 class App {
   constructor() {
@@ -25,10 +25,11 @@ class App {
     this.isAdminAuthenticated = false;
     this.tourneyManager = null;
     this.goatManager = null;
+    this.focusedElementId = null;
+    this.focusedCursorPos = 0;
   }
 
   async init() {
-    // Safari / WebKit cache buster check
     const lastVer = sessionStorage.getItem('larp_app_ver');
     if (lastVer !== CURRENT_VERSION) {
       sessionStorage.setItem('larp_app_ver', CURRENT_VERSION);
@@ -90,6 +91,13 @@ class App {
     const appEl = document.getElementById('app');
     if (!appEl) return;
 
+    // Track active element before DOM re-render
+    const activeEl = document.activeElement;
+    if (activeEl && (activeEl.id === 'search-input' || activeEl.id === 'goat-search-input')) {
+      this.focusedElementId = activeEl.id;
+      this.focusedCursorPos = activeEl.selectionStart || activeEl.value.length;
+    }
+
     const entries = storage.getEntries();
     const activeWeek = storage.getActiveWeek();
 
@@ -116,6 +124,18 @@ class App {
     `;
 
     this.rebindDOMEvents();
+
+    // Restore focus and cursor position after re-render!
+    if (this.focusedElementId) {
+      const restoredInput = document.getElementById(this.focusedElementId);
+      if (restoredInput) {
+        restoredInput.focus();
+        try {
+          restoredInput.setSelectionRange(this.focusedCursorPos, this.focusedCursorPos);
+        } catch (e) {}
+      }
+      this.focusedElementId = null;
+    }
   }
 
   setTab(tab) {
@@ -160,11 +180,13 @@ class App {
       this.render();
     });
 
-    // GOAT Search & Sort
+    // GOAT Search Input with Focus Preservation
     const goatSearchInput = document.getElementById('goat-search-input');
     if (goatSearchInput) {
       goatSearchInput.addEventListener('input', (e) => {
         this.goatSearchQuery = e.target.value;
+        this.focusedElementId = 'goat-search-input';
+        this.focusedCursorPos = e.target.selectionStart || e.target.value.length;
         this.render();
       });
     }
@@ -198,11 +220,13 @@ class App {
       }, 1200);
     });
 
-    // Leaderboard Search & Sort
+    // Leaderboard Search Input with Focus Preservation
     const searchInput = document.getElementById('search-input');
     if (searchInput) {
       searchInput.addEventListener('input', (e) => {
         this.searchQuery = e.target.value;
+        this.focusedElementId = 'search-input';
+        this.focusedCursorPos = e.target.selectionStart || e.target.value.length;
         this.render();
       });
     }
