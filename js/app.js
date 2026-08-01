@@ -40,7 +40,10 @@ class App {
 
     this.goatManager = new GoatVoteManager(
       storage,
-      () => this.render()
+      () => this.render(),
+      (champion) => {
+        this.render();
+      }
     );
 
     storage.subscribe(() => {
@@ -165,7 +168,7 @@ class App {
       });
     }
 
-    // GOAT 1v1 Battle Cards
+    // GOAT Tournament Battle Cards
     document.getElementById('goat-card-vote-a')?.addEventListener('click', (e) => {
       const winnerId = e.currentTarget.dataset.entryId;
       const loserId = e.currentTarget.dataset.loserId;

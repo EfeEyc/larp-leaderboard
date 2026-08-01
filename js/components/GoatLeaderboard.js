@@ -1,29 +1,83 @@
 export class GoatVoteManager {
-  constructor(storage, onVoteCompleted) {
+  constructor(storage, onVoteCompleted, onTournamentFinished) {
     this.storage = storage;
     this.onVoteCompleted = onVoteCompleted;
+    this.onTournamentFinished = onTournamentFinished;
     this.currentMatch = null;
+    this.roundSize = 8;
+    this.tournamentQueue = [];
+    this.nextRoundQueue = [];
+    this.currentRoundName = 'Quarterfinals';
+    this.roundNumber = 1;
     this.lastMatchResult = null;
+    this.champion = null;
     this.isRevealing = false;
+  }
+
+  startNewTournament(roundSize = 8) {
+    this.roundSize = roundSize;
+    const allEntries = [...this.storage.getEntries()];
+    if (allEntries.length < 2) {
+      return;
+    }
+
+    const shuffled = allEntries.sort(() => Math.random() - 0.5);
+    const selected = shuffled.slice(0, Math.min(roundSize, shuffled.length));
+
+    if (selected.length % 2 !== 0) {
+      selected.pop();
+    }
+
+    this.tournamentQueue = selected;
+    this.nextRoundQueue = [];
+    this.champion = null;
+    this.lastMatchResult = null;
+    this.updateRoundName(selected.length);
+    this.nextMatch();
+  }
+
+  updateRoundName(remainingCount) {
+    if (remainingCount >= 16) this.currentRoundName = 'Round of 16';
+    else if (remainingCount >= 8) this.currentRoundName = 'Quarterfinals (Round of 8)';
+    else if (remainingCount >= 4) this.currentRoundName = 'Semifinals (Round of 4)';
+    else if (remainingCount >= 2) this.currentRoundName = '🏆 ALL-TIME GRAND FINAL 🏆';
   }
 
   nextMatch() {
     this.isRevealing = false;
     this.lastMatchResult = null;
-    const allEntries = this.storage.getEntries();
 
-    if (allEntries.length < 2) {
+    if (this.tournamentQueue.length >= 2) {
+      const contestantA = this.tournamentQueue.shift();
+      const contestantB = this.tournamentQueue.shift();
+      this.currentMatch = { a: contestantA, b: contestantB };
+    } else if (this.tournamentQueue.length === 1) {
+      this.nextRoundQueue.push(this.tournamentQueue.shift());
+      this.advanceRound();
+    } else {
+      this.advanceRound();
+    }
+  }
+
+  advanceRound() {
+    if (this.nextRoundQueue.length === 1) {
+      this.champion = this.nextRoundQueue[0];
       this.currentMatch = null;
-      return;
-    }
+      this.storage.markVotedCurrentMonth();
+      this.triggerConfetti();
 
-    const idxA = Math.floor(Math.random() * allEntries.length);
-    let idxB = Math.floor(Math.random() * allEntries.length);
-    while (idxB === idxA && allEntries.length > 1) {
-      idxB = Math.floor(Math.random() * allEntries.length);
+      if (this.onTournamentFinished) {
+        this.onTournamentFinished(this.champion);
+      }
+    } else if (this.nextRoundQueue.length >= 2) {
+      this.tournamentQueue = [...this.nextRoundQueue];
+      this.nextRoundQueue = [];
+      this.roundNumber++;
+      this.updateRoundName(this.tournamentQueue.length);
+      this.nextMatch();
+    } else {
+      this.startNewTournament(this.roundSize);
     }
-
-    this.currentMatch = { a: allEntries[idxA], b: allEntries[idxB] };
   }
 
   async vote(winnerId, loserId) {
@@ -32,10 +86,24 @@ export class GoatVoteManager {
 
     const result = await this.storage.recordMatchVote(winnerId, loserId);
     this.lastMatchResult = { winnerId, loserId, result };
-    this.storage.markVotedCurrentMonth();
+
+    const winnerEntry = this.storage.getEntryById(winnerId);
+    if (winnerEntry) {
+      this.nextRoundQueue.push(winnerEntry);
+    }
 
     if (this.onVoteCompleted) {
       this.onVoteCompleted();
+    }
+  }
+
+  triggerConfetti() {
+    if (window.confetti) {
+      window.confetti({
+        particleCount: 150,
+        spread: 90,
+        origin: { y: 0.6 }
+      });
     }
   }
 }
@@ -71,11 +139,11 @@ export function renderGoatLeaderboard(entries, searchQuery, sortBy, subTab, goat
           ALL-TIME GOATs
         </h2>
         <p class="text-slate-400 max-w-xl mx-auto text-sm sm:text-base font-light">
-          Master leaderboard & monthly 1v1 battle arena for all LARPers uploaded across all weeks.
+          Master rankings & tournament bracket for all LARPers uploaded across all weeks.
         </p>
       </div>
 
-      <!-- Sub-Tab Switcher: Rankings vs Monthly 1v1 Battle -->
+      <!-- Sub-Tab Switcher: Rankings vs Monthly Tournament -->
       <div class="flex justify-center">
         <div class="bg-slate-950/80 p-1.5 rounded-2xl border border-white/10 flex space-x-2">
           <button id="goat-tab-rankings" class="px-6 py-2.5 rounded-xl font-cinzel text-xs sm:text-sm font-bold transition-all ${
@@ -90,7 +158,7 @@ export function renderGoatLeaderboard(entries, searchQuery, sortBy, subTab, goat
               ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/30' 
               : 'text-gray-400 hover:text-white'
           }">
-            ⚔️ MONTHLY GOATs 1v1 BATTLE
+            ⚔️ MONTHLY GOAT TOURNAMENT BRACKET
           </button>
         </div>
       </div>
@@ -258,7 +326,7 @@ function renderGoatRankingsView(filtered, top3, searchQuery, sortBy) {
 function renderGoatBattleView(manager, storage) {
   const hasVotedMonth = storage ? storage.hasVotedCurrentMonth() : false;
 
-  if (hasVotedMonth && !manager.currentMatch) {
+  if (hasVotedMonth && !manager.champion && !manager.currentMatch) {
     return `
       <div class="max-w-4xl mx-auto px-4 py-16 text-center space-y-8 animate-fade-in">
         <div class="glass-panel p-10 rounded-3xl border border-amber-500/40 space-y-6">
@@ -266,9 +334,9 @@ function renderGoatBattleView(manager, storage) {
             👑
           </div>
           <div>
-            <h2 class="font-cinzel text-3xl font-bold text-gradient-gold">MONTHLY GOAT VOTE COMPLETED</h2>
+            <h2 class="font-cinzel text-3xl font-bold text-gradient-gold">MONTHLY GOAT TOURNAMENT COMPLETED</h2>
             <p class="text-slate-300 text-sm mt-2 max-w-md mx-auto">
-              You have already cast your vote in this month's All-Time GOATs 1v1 Battle!
+              You have completed your Monthly GOAT Tournament Bracket vote!
             </p>
           </div>
           <p class="text-xs font-mono text-slate-400">
@@ -279,21 +347,46 @@ function renderGoatBattleView(manager, storage) {
     `;
   }
 
-  if (!manager.currentMatch) {
-    manager.nextMatch();
+  if (!manager.currentMatch && !manager.champion) {
+    manager.startNewTournament(8);
   }
 
   const match = manager.currentMatch;
+  const champion = manager.champion;
 
-  if (!match) {
+  if (champion) {
     return `
-      <div class="max-w-4xl mx-auto px-4 py-16 text-center space-y-4 glass-panel rounded-3xl border border-amber-500/40">
-        <div class="text-4xl">👑</div>
-        <h3 class="font-cinzel text-2xl font-bold text-white">NEED AT LEAST 2 LARPers FOR GOAT BATTLES</h3>
-        <p class="text-xs text-slate-400">Upload more LARPers in the Admin panel to unlock All-Time GOAT matchups!</p>
+      <div class="max-w-4xl mx-auto px-4 py-12 text-center space-y-8 animate-fade-in">
+        <div class="glass-panel p-10 rounded-3xl border-2 border-amber-500/50 shadow-2xl relative overflow-hidden gold-glow">
+          <div class="inline-block px-6 py-2 bg-gradient-to-r from-amber-500 to-yellow-300 text-slate-950 font-black rounded-full text-xs font-mono uppercase tracking-widest mb-6">
+            👑 YOUR MONTHLY GOAT CHAMPION PICK 👑
+          </div>
+
+          <div class="w-64 h-64 mx-auto rounded-3xl overflow-hidden border-4 border-amber-400 shadow-2xl relative mb-6 bg-slate-950 flex items-center justify-center p-2">
+            <img src="${champion.imageUrl}" alt="${champion.title}" class="w-full h-full object-contain" />
+          </div>
+
+          <h2 class="font-cinzel text-3xl sm:text-5xl font-black text-amber-300 mb-6">
+            ${champion.title}
+          </h2>
+
+          <div class="flex justify-center space-x-6 max-w-xs mx-auto bg-slate-950/80 p-4 rounded-2xl border border-white/10 font-mono text-sm mb-8">
+            <div>
+              <span class="text-xs text-slate-400 block uppercase">TOTAL WINS</span>
+              <strong class="text-emerald-400 text-xl font-bold">${champion.wins || 0}</strong>
+            </div>
+            <div class="w-px bg-white/10"></div>
+            <div>
+              <span class="text-xs text-slate-400 block uppercase">LOSSES</span>
+              <strong class="text-rose-400 text-xl font-bold">${champion.losses || 0}</strong>
+            </div>
+          </div>
+        </div>
       </div>
     `;
   }
+
+  if (!match) return '';
 
   const { a, b } = match;
   const totalMatchVotes = (a.totalVotes || 0) + (b.totalVotes || 0) || 1;
@@ -303,10 +396,12 @@ function renderGoatBattleView(manager, storage) {
   return `
     <div class="max-w-6xl mx-auto px-4 py-4 space-y-8">
       
-      <div class="glass-panel p-6 rounded-3xl border border-amber-500/40 text-center">
-        <span class="text-xs font-mono text-amber-400 block uppercase mb-1">MONTHLY ALL-TIME GOAT MATCHUP</span>
+      <div class="glass-panel p-6 rounded-3xl border border-amber-500/40 text-center space-y-1">
+        <span class="text-xs font-mono text-amber-400 uppercase tracking-widest font-bold">
+          ${manager.currentRoundName || 'Quarterfinals'}
+        </span>
         <h2 class="font-cinzel text-2xl sm:text-4xl font-extrabold text-white">
-          WHO IS THE GREATER GOAT?
+          MONTHLY GOAT 1v1 TOURNAMENT
         </h2>
       </div>
 
