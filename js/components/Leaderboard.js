@@ -30,32 +30,12 @@ export function renderLeaderboard(entries, filterCategory, searchQuery, sortBy) 
         </p>
       </div>
 
-      <!-- Podium Section (Top 3) -->
+      <!-- Podium Section (Top 3) with Mobile Order Fix -->
       ${top3.length >= 3 && !searchQuery ? `
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-end pt-6 pb-2">
+        <div class="flex flex-col md:grid md:grid-cols-3 gap-6 items-end pt-6 pb-2">
           
-          <!-- 2nd Place Silver -->
-          <div class="podium-2 rounded-3xl p-6 relative cursor-pointer glass-panel-hover" data-entry-id="${top3[1].id}">
-            <div class="absolute -top-4 left-1/2 -translate-x-1/2 bg-slate-300 text-slate-950 font-bold px-4 py-1 rounded-full text-xs font-mono tracking-widest shadow-md">
-              🥈 2ND PLACE
-            </div>
-            <div class="mt-2 text-center space-y-4">
-              <div class="w-36 h-36 mx-auto rounded-2xl overflow-hidden border-2 border-slate-300 shadow-xl relative bg-slate-950 flex items-center justify-center p-1">
-                <img src="${top3[1].imageUrl}" alt="${top3[1].title}" class="w-full h-full object-contain" />
-              </div>
-              <div>
-                <h3 class="font-cinzel text-lg font-bold text-white">${top3[1].title}</h3>
-              </div>
-              <div class="flex justify-center items-center space-x-3 bg-slate-950/60 p-2.5 rounded-xl border border-white/10 text-sm font-mono">
-                <span class="text-emerald-400 font-bold">${top3[1].wins || 0} Wins</span>
-                <span class="text-slate-500">•</span>
-                <span class="text-rose-400">${top3[1].losses || 0} Losses</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- 1st Place Gold -->
-          <div class="podium-1 rounded-3xl p-8 relative cursor-pointer glass-panel-hover transform md:-translate-y-4" data-entry-id="${top3[0].id}">
+          <!-- 1st Place Gold (Order 1 on mobile, Order 2 / Middle on desktop) -->
+          <div class="w-full order-1 md:order-2 podium-1 rounded-3xl p-8 relative cursor-pointer glass-panel-hover transform md:-translate-y-4" data-entry-id="${top3[0].id}">
             <div class="absolute -top-5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500 text-slate-950 font-black px-6 py-1.5 rounded-full text-xs font-mono tracking-widest shadow-lg shadow-amber-500/40 animate-pulse">
               👑 1ST PLACE CHAMPION
             </div>
@@ -74,8 +54,28 @@ export function renderLeaderboard(entries, filterCategory, searchQuery, sortBy) 
             </div>
           </div>
 
-          <!-- 3rd Place Bronze -->
-          <div class="podium-3 rounded-3xl p-6 relative cursor-pointer glass-panel-hover" data-entry-id="${top3[2].id}">
+          <!-- 2nd Place Silver (Order 2 on mobile, Order 1 / Left on desktop) -->
+          <div class="w-full order-2 md:order-1 podium-2 rounded-3xl p-6 relative cursor-pointer glass-panel-hover" data-entry-id="${top3[1].id}">
+            <div class="absolute -top-4 left-1/2 -translate-x-1/2 bg-slate-300 text-slate-950 font-bold px-4 py-1 rounded-full text-xs font-mono tracking-widest shadow-md">
+              🥈 2ND PLACE
+            </div>
+            <div class="mt-2 text-center space-y-4">
+              <div class="w-36 h-36 mx-auto rounded-2xl overflow-hidden border-2 border-slate-300 shadow-xl relative bg-slate-950 flex items-center justify-center p-1">
+                <img src="${top3[1].imageUrl}" alt="${top3[1].title}" class="w-full h-full object-contain" />
+              </div>
+              <div>
+                <h3 class="font-cinzel text-lg font-bold text-white">${top3[1].title}</h3>
+              </div>
+              <div class="flex justify-center items-center space-x-3 bg-slate-950/60 p-2.5 rounded-xl border border-white/10 text-sm font-mono">
+                <span class="text-emerald-400 font-bold">${top3[1].wins || 0} Wins</span>
+                <span class="text-slate-500">•</span>
+                <span class="text-rose-400">${top3[1].losses || 0} Losses</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3rd Place Bronze (Order 3 on mobile, Order 3 / Right on desktop) -->
+          <div class="w-full order-3 md:order-3 podium-3 rounded-3xl p-6 relative cursor-pointer glass-panel-hover" data-entry-id="${top3[2].id}">
             <div class="absolute -top-4 left-1/2 -translate-x-1/2 bg-amber-800 text-amber-100 font-bold px-4 py-1 rounded-full text-xs font-mono tracking-widest shadow-md">
               🥉 3RD PLACE
             </div>
