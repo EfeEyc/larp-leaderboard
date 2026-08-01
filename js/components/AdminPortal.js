@@ -6,6 +6,7 @@ export function renderAdminPortal(storage, isAuthenticated) {
   const entries = storage.getEntries();
   const activeWeek = storage.getActiveWeek();
 
+  // Password Lock Screen if not authenticated
   if (!isAuthenticated) {
     return `
       <div class="max-w-md mx-auto px-4 py-16">
@@ -14,19 +15,20 @@ export function renderAdminPortal(storage, isAuthenticated) {
             👑
           </div>
           <div>
-            <h2 class="font-cinzel text-2xl font-bold text-white">ADMIN PORTAL</h2>
-            <p class="text-xs text-slate-400 mt-1">Enter admin key to manage LARP Leaderboard rosters</p>
+            <h2 class="font-cinzel text-2xl font-bold text-white">ADMIN PORTAL LOGIN</h2>
+            <p class="text-xs text-slate-400 mt-1">Unlock with your admin password to access roster management & security settings.</p>
+            <p class="text-[11px] text-amber-400 font-mono mt-2">Default Password: <strong>admin</strong></p>
           </div>
           <form id="admin-auth-form" class="space-y-4">
             <input 
               type="password" 
               id="admin-pass-input" 
-              placeholder="Enter Admin Password (default: admin)" 
+              placeholder="Enter Admin Password" 
               class="w-full bg-slate-950 border border-white/15 rounded-xl px-4 py-3 text-sm text-white text-center placeholder-gray-500 focus:outline-none focus:border-amber-500"
               required
             />
-            <button type="submit" class="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-300 text-slate-950 font-black font-cinzel text-sm shadow-lg shadow-amber-500/20">
-              UNLOCK ADMIN ACCESS
+            <button type="submit" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-300 text-slate-950 font-black font-cinzel text-sm shadow-lg shadow-amber-500/20 hover:scale-105 transition-transform">
+              🔓 UNLOCK ADMIN DASHBOARD
             </button>
           </form>
         </div>
@@ -127,17 +129,18 @@ export function renderAdminPortal(storage, isAuthenticated) {
       </div>
 
       <!-- Security: Change Admin Password Panel -->
-      <div class="glass-panel p-8 rounded-3xl space-y-6 border border-amber-500/30">
+      <div class="glass-panel p-8 rounded-3xl space-y-6 border-2 border-amber-500/50 shadow-xl">
         <h3 class="font-cinzel text-xl font-bold text-amber-400 border-b border-white/10 pb-3 flex items-center space-x-2">
           <span>🔑</span><span>CHANGE ADMIN PASSWORD</span>
         </h3>
+        <p class="text-xs text-slate-300">Set a new secret admin password. It will be stored as an irreversible SHA-256 hash.</p>
         <form id="form-change-password" class="space-y-4 max-w-md">
           <div class="space-y-1">
             <label class="text-xs font-mono text-slate-300">New Admin Password</label>
-            <input type="password" id="input-new-pass" required placeholder="Enter new secret password" class="w-full bg-slate-950 border border-white/15 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500" />
+            <input type="password" id="input-new-pass" required placeholder="Enter new secret password" class="w-full bg-slate-950 border border-white/15 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-500" />
           </div>
-          <button type="submit" class="px-6 py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold font-mono text-xs rounded-xl shadow-lg shadow-amber-500/20">
-            🔒 UPDATE ADMIN PASSWORD
+          <button type="submit" class="px-6 py-3.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold font-mono text-xs rounded-xl shadow-lg shadow-amber-500/20">
+            🔒 UPDATE ADMIN PASSWORD NOW
           </button>
         </form>
       </div>
