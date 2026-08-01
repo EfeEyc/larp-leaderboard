@@ -1,7 +1,8 @@
 import { firebaseService } from './firebaseService.js';
 import { convertGoogleDriveUrl } from './gdriveHelper.js';
+import { DEFAULT_ADMIN_HASH } from './cryptoHelper.js';
 
-const LOCAL_STORAGE_KEY = 'larp_leaderboard_data_v3';
+const LOCAL_STORAGE_KEY = 'larp_leaderboard_data_v4';
 const VOTED_WEEKS_KEY = 'larp_leaderboard_voted_weeks';
 
 export class StorageService {
@@ -36,7 +37,7 @@ export class StorageService {
         activeWeek: { id: 'week-1', title: 'Week 1', status: 'active' },
         weeks: [{ id: 'week-1', title: 'Week 1', status: 'active' }],
         entries: [],
-        config: { adminPassword: 'admin', firebaseConfig: {}, activeStorage: 'local' }
+        config: { adminPasswordHash: DEFAULT_ADMIN_HASH, firebaseConfig: {}, activeStorage: 'local' }
       };
     }
 
@@ -214,7 +215,6 @@ export class StorageService {
     this.notify();
   }
 
-  // Simplified vote record (strictly W/L)
   async recordMatchVote(winnerId, loserId) {
     const winner = this.getEntryById(winnerId);
     const loser = this.getEntryById(loserId);

@@ -5,6 +5,7 @@ import { renderTournamentVote, TournamentVoteManager } from './components/Tourna
 import { renderAdminPortal } from './components/AdminPortal.js';
 import { renderEntryModal } from './components/EntryModal.js';
 import { convertGoogleDriveUrl } from './gdriveHelper.js';
+import { hashPassword, DEFAULT_ADMIN_HASH } from './cryptoHelper.js';
 
 class App {
   constructor() {
@@ -173,13 +174,15 @@ class App {
       }, 1200);
     });
 
-    // Admin Auth Form
-    document.getElementById('admin-auth-form')?.addEventListener('submit', (e) => {
+    // Admin Auth Form with SHA-256 password hash comparison
+    document.getElementById('admin-auth-form')?.addEventListener('submit', async (e) => {
       e.preventDefault();
       const inputPass = document.getElementById('admin-pass-input').value;
+      const computedHash = await hashPassword(inputPass);
       const currentConfig = storage.getConfig();
-      const actualPass = currentConfig.adminPassword || 'admin';
-      if (inputPass === actualPass) {
+      const actualHash = currentConfig.adminPasswordHash || DEFAULT_ADMIN_HASH;
+
+      if (computedHash === actualHash) {
         this.isAdminAuthenticated = true;
         this.render();
       } else {
@@ -187,13 +190,14 @@ class App {
       }
     });
 
-    // Change Password Form
-    document.getElementById('form-change-password')?.addEventListener('submit', (e) => {
+    // Change Password Form using SHA-256 Hash
+    document.getElementById('form-change-password')?.addEventListener('submit', async (e) => {
       e.preventDefault();
       const newPass = document.getElementById('input-new-pass').value;
       if (newPass) {
-        storage.updateConfig({ adminPassword: newPass });
-        alert('✓ Admin password updated successfully! Remember to export your data.json if using static GitHub Pages hosting.');
+        const newHash = await hashPassword(newPass);
+        storage.updateConfig({ adminPasswordHash: newHash });
+        alert('✓ Admin password securely hashed and updated! Your plain password is never exposed in the repository.');
         this.render();
       }
     });
