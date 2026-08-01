@@ -14,11 +14,18 @@ export class GoatVoteManager {
     this.isRevealing = false;
   }
 
+  isActivatedEntry(e) {
+    return e && e.weekId && e.weekId !== 'pending' && e.weekId !== 'unassigned';
+  }
+
   startNewTournament(roundSize = 8) {
     this.roundSize = roundSize;
-    // Only pick activated entries (exclude pending)
-    const activatedEntries = this.storage.getEntries().filter(e => e.weekId && e.weekId !== 'pending');
+    // Strict filter: exclude ALL pending or unassigned entries
+    const activatedEntries = this.storage.getEntries().filter(e => this.isActivatedEntry(e));
+    
     if (activatedEntries.length < 2) {
+      this.currentMatch = null;
+      this.tournamentQueue = [];
       return;
     }
 
@@ -48,12 +55,18 @@ export class GoatVoteManager {
     this.isRevealing = false;
     this.lastMatchResult = null;
 
+    // Filter out any lingering pending entries from queue
+    this.tournamentQueue = this.tournamentQueue.filter(e => this.isActivatedEntry(e));
+
     if (this.tournamentQueue.length >= 2) {
       const contestantA = this.tournamentQueue.shift();
       const contestantB = this.tournamentQueue.shift();
       this.currentMatch = { a: contestantA, b: contestantB };
     } else if (this.tournamentQueue.length === 1) {
-      this.nextRoundQueue.push(this.tournamentQueue.shift());
+      const remaining = this.tournamentQueue.shift();
+      if (this.isActivatedEntry(remaining)) {
+        this.nextRoundQueue.push(remaining);
+      }
       this.advanceRound();
     } else {
       this.advanceRound();
@@ -61,6 +74,8 @@ export class GoatVoteManager {
   }
 
   advanceRound() {
+    this.nextRoundQueue = this.nextRoundQueue.filter(e => this.isActivatedEntry(e));
+
     if (this.nextRoundQueue.length === 1) {
       this.champion = this.nextRoundQueue[0];
       this.currentMatch = null;
@@ -89,7 +104,7 @@ export class GoatVoteManager {
     this.lastMatchResult = { winnerId, loserId, result };
 
     const winnerEntry = this.storage.getEntryById(winnerId);
-    if (winnerEntry) {
+    if (winnerEntry && this.isActivatedEntry(winnerEntry)) {
       this.nextRoundQueue.push(winnerEntry);
     }
 
@@ -110,8 +125,8 @@ export class GoatVoteManager {
 }
 
 export function renderGoatLeaderboard(entries, searchQuery, sortBy, subTab, goatManager, storage) {
-  // Hide pending unassigned entries from All-Time GOATs board!
-  let filtered = entries.filter(e => e.weekId && e.weekId !== 'pending');
+  // Strict filter: hide all pending/unassigned entries from All-Time GOATs board!
+  let filtered = entries.filter(e => e && e.weekId && e.weekId !== 'pending' && e.weekId !== 'unassigned');
 
   if (searchQuery) {
     filtered = filtered.filter(e => e.title.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -388,7 +403,15 @@ function renderGoatBattleView(manager, storage) {
     `;
   }
 
-  if (!match) return '';
+  if (!match) {
+    return `
+      <div class="max-w-4xl mx-auto px-4 py-16 text-center space-y-4 glass-panel rounded-3xl border border-amber-500/40">
+        <div class="text-4xl">👑</div>
+        <h3 class="font-cinzel text-2xl font-bold text-white">NEED AT LEAST 2 ACTIVATED LARPers FOR GOAT BATTLES</h3>
+        <p class="text-xs text-slate-400">Activate pending LARPers into a weekly roster in the Admin panel to unlock All-Time GOAT matchups!</p>
+      </div>
+    `;
+  }
 
   const { a, b } = match;
   const totalMatchVotes = (a.totalVotes || 0) + (b.totalVotes || 0) || 1;
