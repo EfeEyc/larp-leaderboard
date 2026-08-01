@@ -5,11 +5,11 @@ import { renderTournamentVote, TournamentVoteManager } from './components/Tourna
 import { renderAdminPortal } from './components/AdminPortal.js';
 import { renderEntryModal } from './components/EntryModal.js';
 import { renderGoatLeaderboard, GoatVoteManager } from './components/GoatLeaderboard.js';
-import { convertGoogleDriveUrl, parseGoogleDriveFileIds, formatFileNameToTitle, fetchFilesFromGoogleDriveFolder, fetchGoogleDriveFileName } from './gdriveHelper.js';
+import { convertGoogleDriveUrl, parseGoogleDriveFileIds, formatFileNameToTitle } from './gdriveHelper.js';
 import { compressImageFile } from './imageHelper.js';
 import { hashPassword, DEFAULT_ADMIN_HASH } from './cryptoHelper.js';
 
-const CURRENT_VERSION = 'v6.0.0';
+const CURRENT_VERSION = 'v6.1.0';
 
 class App {
   constructor() {
@@ -332,66 +332,42 @@ class App {
     document.getElementById('upload-tab-file')?.addEventListener('click', () => setUploadMode('file'));
     document.getElementById('upload-tab-url')?.addEventListener('click', () => setUploadMode('url'));
 
-    // Helper to open Batch Naming Modal for Google Drive File IDs
-    const openBatchNamingModalForDriveText = async (text) => {
+    // Instant Batch Naming Window opener (0ms network calls!)
+    const openBatchNamingModalForDriveText = (text) => {
       if (!text) return;
       
-      let items = [];
-
-      if (text.includes('/folders/')) {
-        const folderFiles = await fetchFilesFromGoogleDriveFolder(text);
-        if (folderFiles.length > 0) {
-          items = folderFiles.map(f => ({
-            id: f.id,
-            imageUrl: f.imageUrl,
-            title: f.name || 'Untitled LARPer'
-          }));
-        }
+      const ids = parseGoogleDriveFileIds(text);
+      if (ids.length === 0) {
+        alert('Could not detect photo file IDs.\n\nTo import multiple photos at once:\n1. Open your folder in Google Drive\n2. Select photos -> Right-click -> Copy links\n3. Paste the links here!');
+        return;
       }
 
-      if (items.length === 0) {
-        const ids = parseGoogleDriveFileIds(text);
-        if (ids.length === 0) {
-          alert('Could not detect photo file IDs.\n\nTo import multiple photos at once:\n1. Open your folder in Google Drive\n2. Select photos -> Right-click -> Copy links\n3. Paste the links here!');
-          return;
-        }
+      const items = ids.map((id, idx) => ({
+        id,
+        imageUrl: `https://lh3.googleusercontent.com/d/${id}=s1600`,
+        title: `LARPer #${idx + 1}`
+      }));
 
-        for (let i = 0; i < ids.length; i++) {
-          const id = ids[i];
-          const embedUrl = `https://lh3.googleusercontent.com/d/${id}=s1600`;
-          const realName = await fetchGoogleDriveFileName(id);
-          items.push({
-            id,
-            imageUrl: embedUrl,
-            title: realName || `LARPer #${i + 1}`
-          });
-        }
-      }
-
-      if (items.length > 0) {
-        this.pendingBatchDriveItems = items;
-        this.render();
-      }
+      this.pendingBatchDriveItems = items;
+      this.render();
     };
 
     // Google Drive Quick Prompt Button
-    document.getElementById('btn-open-gdrive-picker')?.addEventListener('click', async () => {
-      const linksPasted = prompt('☁️ Paste your Google Drive photo share link(s) or folder link below:\n\nExample: https://drive.google.com/file/d/1ABC...');
+    document.getElementById('btn-open-gdrive-picker')?.addEventListener('click', () => {
+      const linksPasted = prompt('☁️ Paste your Google Drive photo share link(s) below:\n\nExample: https://drive.google.com/file/d/1ABC...');
       if (linksPasted) {
-        await openBatchNamingModalForDriveText(linksPasted);
+        openBatchNamingModalForDriveText(linksPasted);
       }
     });
 
-    // Batch Google Drive Link / Folder Import Button
-    document.getElementById('btn-import-batch-gdrive')?.addEventListener('click', async () => {
+    // Batch Google Drive Link Import Button
+    document.getElementById('btn-import-batch-gdrive')?.addEventListener('click', () => {
       const text = document.getElementById('input-batch-gdrive-links')?.value || '';
       if (!text) {
         alert('Please paste one or more Google Drive photo share links!');
         return;
       }
-      const btn = document.getElementById('btn-import-batch-gdrive');
-      if (btn) btn.innerHTML = '⌛ Preparing Naming Window...';
-      await openBatchNamingModalForDriveText(text);
+      openBatchNamingModalForDriveText(text);
     });
 
     // Batch Naming Window Modal Handlers
