@@ -6,20 +6,17 @@ export function renderAdminPortal(storage, isAuthenticated) {
   const entries = storage.getEntries();
   const activeWeek = storage.getActiveWeek();
 
-  // If not authenticated, show Lock Screen AND instant Password Change Option right here!
+  // If not authenticated, show Clean Lock Screen
   if (!isAuthenticated) {
     return `
-      <div class="max-w-md mx-auto px-4 py-12 space-y-6">
-        
-        <!-- Lock Screen Login Card -->
+      <div class="max-w-md mx-auto px-4 py-16">
         <div class="glass-panel p-8 rounded-3xl border border-amber-500/30 text-center space-y-6">
           <div class="w-16 h-16 mx-auto rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-3xl">
             👑
           </div>
           <div>
             <h2 class="font-cinzel text-2xl font-bold text-white">ADMIN PORTAL LOGIN</h2>
-            <p class="text-xs text-slate-400 mt-1">Unlock with your admin password to manage rosters & materials.</p>
-            <p class="text-[11px] text-amber-400 font-mono mt-2">Default Password: <strong>admin</strong></p>
+            <p class="text-xs text-slate-400 mt-1">Enter your admin key to unlock dashboard.</p>
           </div>
           <form id="admin-auth-form" class="space-y-4">
             <input 
@@ -34,27 +31,6 @@ export function renderAdminPortal(storage, isAuthenticated) {
             </button>
           </form>
         </div>
-
-        <!-- Direct Change / Set Password Card -->
-        <div class="glass-panel p-6 rounded-3xl border border-white/10 text-center space-y-4">
-          <h3 class="font-cinzel text-sm font-bold text-amber-400 flex items-center justify-center space-x-2">
-            <span>🔑</span><span>SET NEW ADMIN PASSWORD</span>
-          </h3>
-          <p class="text-xs text-slate-400">Want to create a custom password now? Enter your new password below:</p>
-          <form id="form-lockscreen-change-password" class="space-y-3">
-            <input 
-              type="password" 
-              id="input-lockscreen-new-pass" 
-              placeholder="Type your new secret password" 
-              class="w-full bg-slate-950 border border-white/15 rounded-xl px-4 py-2.5 text-xs text-white text-center placeholder-gray-500 focus:outline-none focus:border-amber-500"
-              required
-            />
-            <button type="submit" class="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 font-bold font-mono text-xs border border-amber-500/30">
-              🔒 SET NEW PASSWORD & LOGIN
-            </button>
-          </form>
-        </div>
-
       </div>
     `;
   }
@@ -71,7 +47,7 @@ export function renderAdminPortal(storage, isAuthenticated) {
             <span class="text-xl">👑</span>
             <h2 class="font-cinzel text-2xl font-bold text-gradient-gold">ADMINISTRATION DASHBOARD</h2>
           </div>
-          <p class="text-xs text-slate-400 mt-1">Upload LARPers (Name + Image), manage weekly rosters, configure password & Firebase.</p>
+          <p class="text-xs text-slate-400 mt-1">Upload LARPers (Name + Image), manage weekly rosters, configure Firebase.</p>
         </div>
 
         <div class="flex flex-wrap items-center gap-3">
@@ -147,22 +123,6 @@ export function renderAdminPortal(storage, isAuthenticated) {
 
           <button type="submit" class="w-full py-4 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-300 text-slate-950 font-black font-cinzel text-base shadow-xl shadow-amber-500/20">
             💾 UPLOAD LARPER TO LEADERBOARD
-          </button>
-        </form>
-      </div>
-
-      <!-- Security: Change Admin Password Panel -->
-      <div class="glass-panel p-8 rounded-3xl space-y-6 border-2 border-amber-500/50 shadow-xl">
-        <h3 class="font-cinzel text-xl font-bold text-amber-400 border-b border-white/10 pb-3 flex items-center space-x-2">
-          <span>🔑</span><span>CHANGE ADMIN PASSWORD</span>
-        </h3>
-        <form id="form-change-password" class="space-y-4 max-w-md">
-          <div class="space-y-1">
-            <label class="text-xs font-mono text-slate-300">New Admin Password</label>
-            <input type="password" id="input-new-pass" required placeholder="Enter new secret password" class="w-full bg-slate-950 border border-white/15 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-500" />
-          </div>
-          <button type="submit" class="px-6 py-3.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold font-mono text-xs rounded-xl shadow-lg shadow-amber-500/20">
-            🔒 UPDATE ADMIN PASSWORD NOW
           </button>
         </form>
       </div>
