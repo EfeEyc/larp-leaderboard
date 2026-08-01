@@ -5,7 +5,6 @@ import { DEFAULT_ADMIN_HASH } from './cryptoHelper.js';
 const LOCAL_STORAGE_KEY = 'larp_leaderboard_data_v7';
 const VOTED_WEEKS_KEY = 'larp_leaderboard_voted_weeks';
 
-// Purge legacy caches to force existing visitors onto Firebase
 function purgeLegacyCaches() {
   const legacyKeys = [
     'larp_leaderboard_data_v1',
@@ -13,7 +12,8 @@ function purgeLegacyCaches() {
     'larp_leaderboard_data_v3',
     'larp_leaderboard_data_v4',
     'larp_leaderboard_data_v5',
-    'larp_leaderboard_data_v6'
+    'larp_leaderboard_data_v6',
+    'larp_leaderboard_data_v7'
   ];
   legacyKeys.forEach(key => {
     try {
@@ -28,11 +28,12 @@ export class StorageService {
     this.listeners = [];
   }
 
-  async init() {
-    // Force purge old legacy local storage for returning visitors
-    purgeLegacyCaches();
+  async init(forceRefresh = false) {
+    if (forceRefresh) {
+      purgeLegacyCaches();
+      this.data = null;
+    }
 
-    // 1. ALWAYS fetch fresh data.json to pick up global firebaseConfig
     let defaultData = null;
     try {
       const res = await fetch('data.json?t=' + Date.now());
@@ -43,9 +44,8 @@ export class StorageService {
       console.warn('Could not load default data.json:', e);
     }
 
-    // 2. Load LocalStorage cached state if available
     const cached = localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (cached) {
+    if (cached && !forceRefresh) {
       try {
         this.data = JSON.parse(cached);
       } catch (e) {
@@ -53,7 +53,7 @@ export class StorageService {
       }
     }
 
-    if (!this.data) {
+    if (!this.data || forceRefresh) {
       this.data = defaultData || {
         activeWeek: { id: 'week-1', title: 'Week 1', status: 'active' },
         weeks: [{ id: 'week-1', title: 'Week 1', status: 'active' }],
@@ -62,7 +62,6 @@ export class StorageService {
       };
     }
 
-    // 3. FORCE OVERRIDE Firebase Config from data.json for ALL existing & returning visitors!
     if (defaultData && defaultData.config && defaultData.config.firebaseConfig && defaultData.config.firebaseConfig.apiKey) {
       this.data.config = this.data.config || {};
       this.data.config.firebaseConfig = defaultData.config.firebaseConfig;
@@ -74,13 +73,11 @@ export class StorageService {
     this.sanitizeImageUrls();
     this.saveToLocalStorage();
 
-    // 4. Initialize Firebase for existing and new visitors automatically!
     if (this.data.config && this.data.config.firebaseConfig && this.data.config.firebaseConfig.apiKey) {
       const fbInitSuccess = firebaseService.init(this.data.config.firebaseConfig);
       if (fbInitSuccess) {
-        console.log('🔥 Connecting returning/existing visitor to Firebase Firestore...');
+        console.log('🔥 Connecting visitor to Firebase Firestore...');
         firebaseService.subscribeToEntries((remoteEntries) => {
-          console.log(`🔥 Received ${remoteEntries ? remoteEntries.length : 0} remote entries from Firestore!`);
           if (remoteEntries) {
             this.data.entries = remoteEntries;
             this.sanitizeImageUrls();
@@ -92,6 +89,10 @@ export class StorageService {
     }
 
     return this.data;
+  }
+
+  async forceSyncReload() {
+    return await this.init(true);
   }
 
   subscribe(callback) {

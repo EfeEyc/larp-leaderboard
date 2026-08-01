@@ -108,6 +108,15 @@ class App {
       if (drawer) drawer.classList.toggle('hidden');
     });
 
+    // 🔄 Force Sync Reload Button (Fetches fresh data.json & connects to Firebase)
+    document.getElementById('btn-force-sync-reload')?.addEventListener('click', async () => {
+      const btn = document.getElementById('btn-force-sync-reload');
+      if (btn) btn.innerHTML = '⌛ Syncing...';
+      await storage.forceSyncReload();
+      this.render();
+      alert('✓ Synced data.json & reconnected to Firebase live database!');
+    });
+
     document.getElementById('btn-goto-leaderboard')?.addEventListener('click', () => this.setTab('leaderboard'));
     document.getElementById('btn-goto-leaderboard-from-voted')?.addEventListener('click', () => this.setTab('leaderboard'));
 

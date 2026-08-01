@@ -8,7 +8,7 @@ export function renderHeader(activeTab, activeWeekTitle) {
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between h-20">
           
-          <!-- Logo & Brand (Strictly LARP LEADERBOARD) -->
+          <!-- Logo & Brand -->
           <div class="flex items-center space-x-3 cursor-pointer" id="nav-logo">
             <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-amber-600 via-amber-400 to-yellow-200 p-0.5 shadow-lg shadow-amber-500/20">
               <div class="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
@@ -25,7 +25,7 @@ export function renderHeader(activeTab, activeWeekTitle) {
             </div>
           </div>
 
-          <!-- Public Navigation Tabs (Admin Link Hidden from Main Menu) -->
+          <!-- Public Navigation Tabs -->
           <nav class="hidden md:flex items-center space-x-2 bg-slate-950/60 p-1.5 rounded-2xl border border-white/10">
             <button id="tab-btn-leaderboard" class="flex items-center space-x-2 px-5 py-2.5 rounded-xl font-medium text-sm transition-all duration-300 ${
               activeTab === 'leaderboard' 
@@ -46,8 +46,15 @@ export function renderHeader(activeTab, activeWeekTitle) {
             </button>
           </nav>
 
-          <!-- Badges & Status -->
+          <!-- Status & Force Sync Reload Button -->
           <div class="flex items-center space-x-3">
+            
+            <!-- Force Sync Reload Button -->
+            <button id="btn-force-sync-reload" class="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-amber-500/30 text-amber-300 font-mono text-xs flex items-center space-x-1.5 transition-transform active:scale-95 shadow-md">
+              <span class="text-sm">🔄</span>
+              <span class="hidden sm:inline">Sync Database</span>
+            </button>
+
             <div class="hidden lg:flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs font-mono border ${
               isFbConnected 
                 ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400' 
