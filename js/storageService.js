@@ -4,6 +4,7 @@ import { DEFAULT_ADMIN_HASH } from './cryptoHelper.js';
 
 const LOCAL_STORAGE_KEY = 'larp_leaderboard_data_v4';
 const VOTED_WEEKS_KEY = 'larp_leaderboard_voted_weeks';
+const FB_SECRET_STORAGE_KEY = 'larp_leaderboard_fb_secret';
 
 export class StorageService {
   constructor() {
@@ -39,6 +40,17 @@ export class StorageService {
         entries: [],
         config: { adminPasswordHash: DEFAULT_ADMIN_HASH, firebaseConfig: {}, activeStorage: 'local' }
       };
+    }
+
+    // Load private Firebase credentials from local browser storage ONLY
+    const privateFbSecret = localStorage.getItem(FB_SECRET_STORAGE_KEY);
+    if (privateFbSecret) {
+      try {
+        this.data.config = this.data.config || {};
+        this.data.config.firebaseConfig = JSON.parse(privateFbSecret);
+      } catch (e) {
+        console.error('Error loading local Firebase secret:', e);
+      }
     }
 
     this.sanitizeImageUrls();
@@ -85,6 +97,10 @@ export class StorageService {
   saveToLocalStorage() {
     try {
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(this.data));
+      // Save Firebase keys in a dedicated private browser storage key
+      if (this.data.config && this.data.config.firebaseConfig) {
+        localStorage.setItem(FB_SECRET_STORAGE_KEY, JSON.stringify(this.data.config.firebaseConfig));
+      }
     } catch (e) {
       console.error('LocalStorage write error:', e);
     }
@@ -142,6 +158,12 @@ export class StorageService {
 
   updateConfig(newConfig) {
     this.data.config = { ...this.data.config, ...newConfig };
+    
+    // If updating Firebase config, store strictly in private browser storage
+    if (newConfig.firebaseConfig) {
+      localStorage.setItem(FB_SECRET_STORAGE_KEY, JSON.stringify(newConfig.firebaseConfig));
+    }
+
     this.saveToLocalStorage();
 
     if (newConfig.firebaseConfig && newConfig.firebaseConfig.apiKey) {
@@ -242,8 +264,23 @@ export class StorageService {
     return { winner, loser };
   }
 
+  // Export JSON while GUARANTEEING zero Firebase keys leak!
   exportDataJson() {
-    const jsonStr = JSON.stringify(this.data, null, 2);
+    const safeData = JSON.parse(JSON.stringify(this.data));
+    
+    // Strip Firebase keys from export
+    if (safeData.config) {
+      safeData.config.firebaseConfig = {
+        apiKey: "",
+        authDomain: "",
+        projectId: "",
+        storageBucket: "",
+        messagingSenderId: "",
+        appId: ""
+      };
+    }
+
+    const jsonStr = JSON.stringify(safeData, null, 2);
     const blob = new Blob([jsonStr], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -257,7 +294,13 @@ export class StorageService {
     try {
       const imported = JSON.parse(jsonText);
       if (imported && Array.isArray(imported.entries)) {
+        // Preserve local private Firebase keys if present
+        const currentFbConfig = this.data?.config?.firebaseConfig;
         this.data = imported;
+        if (currentFbConfig && currentFbConfig.apiKey) {
+          this.data.config = this.data.config || {};
+          this.data.config.firebaseConfig = currentFbConfig;
+        }
         this.sanitizeImageUrls();
         this.saveToLocalStorage();
         if (firebaseService.isConfigured()) {
