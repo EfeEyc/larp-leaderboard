@@ -15,10 +15,10 @@
   "config": {
     "adminPasswordHash": "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918",
     "firebaseConfig": {
-      "apiKey": "",
-      "authDomain": "",
-      "projectId": "",
-      "storageBucket": "",
+      "apiKey": "AIzaSyDSQco43h0XP_6_Lsg9QlCVR_mgx5PTKXY",
+      "authDomain": "larp-leaderboard.firebaseapp.com",
+      "projectId": "larp-leaderboard",
+      "storageBucket": "larp-leaderboard.firebasestorage.app",
       "messagingSenderId": "",
       "appId": ""
     },
