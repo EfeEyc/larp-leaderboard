@@ -5,6 +5,11 @@ export function renderAdminPortal(storage, isAuthenticated) {
   const config = storage.getConfig();
   const entries = storage.getEntries();
   const activeWeek = storage.getActiveWeek();
+  const activeWeekId = activeWeek.id || 'week-1';
+
+  // Count active vs pending entries
+  const activeEntries = entries.filter(e => e.weekId === activeWeekId);
+  const pendingEntries = entries.filter(e => !e.weekId || e.weekId === 'pending' || e.weekId !== activeWeekId);
 
   if (!isAuthenticated) {
     return `
@@ -46,7 +51,7 @@ export function renderAdminPortal(storage, isAuthenticated) {
             <span class="text-xl">👑</span>
             <h2 class="font-cinzel text-2xl font-bold text-gradient-gold">ADMINISTRATION DASHBOARD</h2>
           </div>
-          <p class="text-xs text-slate-400 mt-1">Upload LARPers, manage weekly active rosters, configure Firebase.</p>
+          <p class="text-xs text-slate-400 mt-1">Upload LARPers (they accumulate for the new week), activate weekly rosters, configure Firebase.</p>
         </div>
 
         <div class="flex flex-wrap items-center gap-3">
@@ -60,26 +65,30 @@ export function renderAdminPortal(storage, isAuthenticated) {
         </div>
       </div>
 
-      <!-- Weekly Rotation Roster Control Panel -->
-      <div class="glass-panel p-8 rounded-3xl space-y-6 border border-amber-500/40">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
+      <!-- Weekly Activation Control Panel -->
+      <div class="glass-panel p-8 rounded-3xl space-y-6 border-2 border-amber-500/50 shadow-2xl">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-4">
           <div>
-            <span class="text-xs font-mono text-amber-400 block uppercase">ACTIVE WEEKLY ROSTER</span>
-            <h3 class="font-cinzel text-2xl font-bold text-white">${activeWeek.title || 'Current Week'}</h3>
+            <span class="text-xs font-mono text-amber-400 block uppercase">CURRENT WEEK STATUS</span>
+            <h3 class="font-cinzel text-2xl font-bold text-white">${activeWeek.title || 'Current Week'} (${activeEntries.length} Active LARPers)</h3>
           </div>
-          <button id="btn-advance-week" class="px-6 py-3 bg-gradient-to-r from-amber-500 to-yellow-300 text-slate-950 font-black font-cinzel text-xs rounded-xl shadow-lg shadow-amber-500/20 hover:scale-105 transition-transform">
-            🔄 START NEW WEEKLY ROTATION
-          </button>
+
+          <div class="flex items-center space-x-3">
+            <button id="btn-activate-accumulated" class="px-6 py-3.5 bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-300 text-slate-950 font-black font-cinzel text-sm rounded-xl shadow-xl shadow-amber-500/30 hover:scale-105 transition-transform">
+              🚀 ACTIVATE NEW WEEKLY ROSTER (${pendingEntries.length} Pending)
+            </button>
+          </div>
         </div>
+        
         <p class="text-xs text-slate-300 leading-relaxed">
-          Starting a new weekly rotation publishes a new weekly roster and resets visitor completion state so everyone can vote on the new roster!
+          <strong>How Weekly Rotations Work:</strong> Upload LARPers as they come in during the week. They will accumulate in your database. When you are ready for a new week, click <strong>🚀 ACTIVATE NEW WEEKLY ROSTER</strong> to start the new week's 1v1 battle voting!
         </p>
       </div>
 
       <!-- Add New LARP Material Form -->
       <div class="glass-panel p-8 rounded-3xl space-y-6">
         <h3 class="font-cinzel text-xl font-bold text-amber-300 border-b border-white/10 pb-3 flex items-center space-x-2">
-          <span>➕</span><span>UPLOAD NEW LARPER</span>
+          <span>➕</span><span>UPLOAD NEW LARPER (ACCUMULATES FOR NEW WEEK)</span>
         </h3>
 
         <form id="form-entry-add" class="space-y-6">
@@ -120,16 +129,8 @@ export function renderAdminPortal(storage, isAuthenticated) {
             </div>
           </div>
 
-          <!-- Add to Current Active Roster Checkbox -->
-          <div class="flex items-center space-x-3 bg-slate-950/80 p-4 rounded-xl border border-amber-500/30">
-            <input type="checkbox" id="chk-add-to-current-week" checked class="w-5 h-5 accent-amber-500 rounded cursor-pointer" />
-            <label for="chk-add-to-current-week" class="text-xs font-mono text-amber-300 cursor-pointer">
-              ⚡ <strong>Add immediately to Current Active Rotation (${activeWeek.title || 'Current Week'})</strong>
-            </label>
-          </div>
-
           <button type="submit" class="w-full py-4 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-300 text-slate-950 font-black font-cinzel text-base shadow-xl shadow-amber-500/20">
-            💾 UPLOAD LARPER TO LEADERBOARD
+            💾 UPLOAD LARPER TO ROSTER POOL
           </button>
         </form>
       </div>
@@ -137,7 +138,7 @@ export function renderAdminPortal(storage, isAuthenticated) {
       <!-- Manage Materials Table -->
       <div class="glass-panel p-8 rounded-3xl space-y-6">
         <h3 class="font-cinzel text-xl font-bold text-amber-300 border-b border-white/10 pb-3 flex items-center space-x-2">
-          <span>📋</span><span>UPLOADED LARPERS (${entries.length})</span>
+          <span>📋</span><span>ALL UPLOADED LARPERS (${entries.length})</span>
         </h3>
 
         <div class="overflow-x-auto">
@@ -145,14 +146,14 @@ export function renderAdminPortal(storage, isAuthenticated) {
             <thead>
               <tr class="border-b border-white/10 text-slate-400 uppercase tracking-wider">
                 <th class="py-3 px-4">LARPer</th>
-                <th class="py-3 px-4">Rotation Status</th>
-                <th class="py-3 px-4">Record (W / L)</th>
+                <th class="py-3 px-4">Status</th>
+                <th class="py-3 px-4">All-Time Record (W / L)</th>
                 <th class="py-3 px-4 text-right">Actions</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-white/5">
               ${entries.map(e => {
-                const isCurrent = !e.weekId || e.weekId === activeWeek.id;
+                const isCurrent = e.weekId === activeWeekId;
                 return `
                   <tr class="hover:bg-slate-900/50">
                     <td class="py-3 px-4 flex items-center space-x-3">
@@ -162,21 +163,16 @@ export function renderAdminPortal(storage, isAuthenticated) {
                     <td class="py-3 px-4">
                       ${isCurrent ? `
                         <span class="px-2.5 py-1 bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 rounded-full text-[11px] font-bold">
-                          ✓ Active Rotation
+                          ✓ Active Week Roster
                         </span>
                       ` : `
-                        <button class="btn-assign-current-week px-2.5 py-1 bg-amber-500/20 hover:bg-amber-500/40 border border-amber-500/40 text-amber-300 rounded-full text-[11px] font-bold" data-entry-id="${e.id}">
-                          ➕ Add to Active Rotation
-                        </button>
+                        <span class="px-2.5 py-1 bg-amber-500/20 border border-amber-500/40 text-amber-300 rounded-full text-[11px] font-bold">
+                          ⏳ Pending New Week
+                        </span>
                       `}
                     </td>
                     <td class="py-3 px-4 text-emerald-400 font-bold">${e.wins || 0}W / ${e.losses || 0}L</td>
-                    <td class="py-3 px-4 text-right space-x-2">
-                      ${!isCurrent ? '' : `
-                        <button class="btn-assign-current-week px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 rounded-lg text-[11px]" data-entry-id="${e.id}">
-                          Re-add to Active
-                        </button>
-                      `}
+                    <td class="py-3 px-4 text-right">
                       <button class="btn-delete-entry px-3 py-1 bg-red-950 hover:bg-red-900 border border-red-500/40 text-red-300 rounded-lg" data-entry-id="${e.id}">
                         Delete
                       </button>

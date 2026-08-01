@@ -4,6 +4,7 @@ import { renderLeaderboard } from './components/Leaderboard.js';
 import { renderTournamentVote, TournamentVoteManager } from './components/TournamentVote.js';
 import { renderAdminPortal } from './components/AdminPortal.js';
 import { renderEntryModal } from './components/EntryModal.js';
+import { renderGoatLeaderboard, GoatVoteManager } from './components/GoatLeaderboard.js';
 import { convertGoogleDriveUrl } from './gdriveHelper.js';
 import { hashPassword, DEFAULT_ADMIN_HASH } from './cryptoHelper.js';
 
@@ -12,10 +13,16 @@ class App {
     this.activeTab = 'leaderboard';
     this.filterCategory = 'All';
     this.searchQuery = '';
-    this.sortBy = 'elo';
+    this.sortBy = 'wins';
+    
+    this.goatSearchQuery = '';
+    this.goatSortBy = 'wins';
+    this.goatSubTab = 'rankings';
+
     this.selectedEntryModal = null;
     this.isAdminAuthenticated = false;
     this.tourneyManager = null;
+    this.goatManager = null;
   }
 
   async init() {
@@ -29,6 +36,11 @@ class App {
       (champion) => {
         this.render();
       }
+    );
+
+    this.goatManager = new GoatVoteManager(
+      storage,
+      () => this.render()
     );
 
     storage.subscribe(() => {
@@ -50,6 +62,8 @@ class App {
 
     if (hash === '#admin' || hash === '#/admin' || search.includes('page=admin')) {
       this.activeTab = 'admin';
+    } else if (hash === '#goats') {
+      this.activeTab = 'goats';
     } else {
       const hasVoted = storage.hasVotedCurrentWeek();
       if (!hasVoted) {
@@ -73,6 +87,8 @@ class App {
       mainContent = renderLeaderboard(entries, this.filterCategory, this.searchQuery, this.sortBy);
     } else if (this.activeTab === 'tournament') {
       mainContent = renderTournamentVote(this.tourneyManager, storage, () => this.setTab('leaderboard'));
+    } else if (this.activeTab === 'goats') {
+      mainContent = renderGoatLeaderboard(entries, this.goatSearchQuery, this.goatSortBy, this.goatSubTab, this.goatManager, storage);
     } else if (this.activeTab === 'admin') {
       mainContent = renderAdminPortal(storage, this.isAdminAuthenticated);
     }
@@ -98,10 +114,12 @@ class App {
   rebindDOMEvents() {
     document.getElementById('tab-btn-leaderboard')?.addEventListener('click', () => this.setTab('leaderboard'));
     document.getElementById('tab-btn-tournament')?.addEventListener('click', () => this.setTab('tournament'));
+    document.getElementById('tab-btn-goats')?.addEventListener('click', () => this.setTab('goats'));
     document.getElementById('nav-logo')?.addEventListener('click', () => this.setTab('leaderboard'));
 
     document.getElementById('mob-btn-leaderboard')?.addEventListener('click', () => this.setTab('leaderboard'));
     document.getElementById('mob-btn-tournament')?.addEventListener('click', () => this.setTab('tournament'));
+    document.getElementById('mob-btn-goats')?.addEventListener('click', () => this.setTab('goats'));
 
     document.getElementById('mobile-menu-btn')?.addEventListener('click', () => {
       const drawer = document.getElementById('mobile-drawer');
@@ -119,13 +137,56 @@ class App {
     document.getElementById('btn-goto-leaderboard')?.addEventListener('click', () => this.setTab('leaderboard'));
     document.getElementById('btn-goto-leaderboard-from-voted')?.addEventListener('click', () => this.setTab('leaderboard'));
 
-    document.querySelectorAll('.btn-category-chip').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        this.filterCategory = e.currentTarget.dataset.category;
-        this.render();
-      });
+    // GOAT Sub-Tab Switches
+    document.getElementById('goat-tab-rankings')?.addEventListener('click', () => {
+      this.goatSubTab = 'rankings';
+      this.render();
     });
 
+    document.getElementById('goat-tab-battle')?.addEventListener('click', () => {
+      this.goatSubTab = 'battle';
+      this.render();
+    });
+
+    // GOAT Search & Sort
+    const goatSearchInput = document.getElementById('goat-search-input');
+    if (goatSearchInput) {
+      goatSearchInput.addEventListener('input', (e) => {
+        this.goatSearchQuery = e.target.value;
+        this.render();
+      });
+    }
+
+    const goatSortSelect = document.getElementById('goat-sort-select');
+    if (goatSortSelect) {
+      goatSortSelect.addEventListener('change', (e) => {
+        this.goatSortBy = e.target.value;
+        this.render();
+      });
+    }
+
+    // GOAT 1v1 Battle Cards
+    document.getElementById('goat-card-vote-a')?.addEventListener('click', (e) => {
+      const winnerId = e.currentTarget.dataset.entryId;
+      const loserId = e.currentTarget.dataset.loserId;
+      this.goatManager.vote(winnerId, loserId);
+      setTimeout(() => {
+        this.goatManager.nextMatch();
+        this.render();
+      }, 1200);
+    });
+
+    document.getElementById('goat-card-vote-b')?.addEventListener('click', (e) => {
+      const winnerId = e.currentTarget.dataset.entryId;
+      const loserId = e.currentTarget.dataset.loserId;
+      this.goatManager.vote(winnerId, loserId);
+      setTimeout(() => {
+        this.goatManager.nextMatch();
+        this.render();
+      }, 1200);
+    });
+
+    // Leaderboard Search & Sort
     const searchInput = document.getElementById('search-input');
     if (searchInput) {
       searchInput.addEventListener('input', (e) => {
@@ -162,6 +223,7 @@ class App {
       }
     });
 
+    // Weekly Tournament Cards
     document.getElementById('card-vote-a')?.addEventListener('click', (e) => {
       const winnerId = e.currentTarget.dataset.entryId;
       const loserId = e.currentTarget.dataset.loserId;
@@ -198,15 +260,19 @@ class App {
       }
     });
 
-    // Advance Weekly Rotation Button in Admin
-    document.getElementById('btn-advance-week')?.addEventListener('click', () => {
-      const newTitle = prompt('Enter a title for the new weekly roster:', `Week ${Date.now()}`);
+    // Activate Weekly Roster Button in Admin
+    const handleAdvanceWeek = async () => {
+      const weeksCount = (storage.data.weeks || []).length + 1;
+      const newTitle = prompt('Enter a title for the new weekly roster:', `Week ${weeksCount}`);
       if (newTitle) {
-        storage.advanceToNewWeek(newTitle);
-        alert(`✓ Started new weekly rotation "${newTitle}"! Visitors can now vote on the new roster.`);
+        await storage.advanceToNewWeek(newTitle);
+        alert(`✓ Activated "${newTitle}"! All accumulated LARPers are now live for voting.`);
         this.render();
       }
-    });
+    };
+
+    document.getElementById('btn-advance-week')?.addEventListener('click', handleAdvanceWeek);
+    document.getElementById('btn-activate-accumulated')?.addEventListener('click', handleAdvanceWeek);
 
     // Image Preview Tester in Admin
     document.getElementById('btn-preview-image')?.addEventListener('click', () => {
@@ -230,39 +296,17 @@ class App {
       const form = e.target;
       const title = document.getElementById('entry-title').value;
       const imageUrl = document.getElementById('entry-image-url').value;
-      const chkAddToActive = document.getElementById('chk-add-to-current-week');
-      const shouldAddToActive = chkAddToActive ? chkAddToActive.checked : true;
-
-      const activeWeekId = storage.getActiveWeekId();
-      const weekId = shouldAddToActive ? activeWeekId : null;
 
       const saved = await storage.addOrUpdateEntry({
-        title, imageUrl, weekId
+        title, imageUrl, weekId: 'pending'
       });
 
       if (saved) {
-        alert(`✓ Successfully uploaded "${title}" and added to active rotation!`);
+        alert(`✓ Uploaded "${title}" to accumulation pool! Click "ACTIVATE NEW WEEKLY ROSTER" when you want to launch the new week.`);
         form.reset();
         document.getElementById('image-preview-container')?.classList.add('hidden');
         this.render();
       }
-    });
-
-    // Assign existing entry to active week
-    document.querySelectorAll('.btn-assign-current-week').forEach(btn => {
-      btn.addEventListener('click', async (e) => {
-        const id = e.currentTarget.dataset.entryId;
-        const activeWeekId = storage.getActiveWeekId();
-        const entry = storage.getEntryById(id);
-        if (entry) {
-          await storage.addOrUpdateEntry({
-            ...entry,
-            weekId: activeWeekId
-          });
-          alert(`✓ Added "${entry.title}" to active rotation!`);
-          this.render();
-        }
-      });
     });
 
     // Firebase Config Form

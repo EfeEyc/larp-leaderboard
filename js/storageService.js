@@ -2,8 +2,9 @@ import { firebaseService } from './firebaseService.js';
 import { convertGoogleDriveUrl } from './gdriveHelper.js';
 import { DEFAULT_ADMIN_HASH } from './cryptoHelper.js';
 
-const LOCAL_STORAGE_KEY = 'larp_leaderboard_data_v9';
+const LOCAL_STORAGE_KEY = 'larp_leaderboard_data_v11';
 const VOTED_WEEKS_KEY = 'larp_leaderboard_voted_weeks';
+const VOTED_MONTHS_KEY = 'larp_leaderboard_voted_months';
 
 function purgeLegacyCaches() {
   const legacyKeys = [
@@ -14,7 +15,9 @@ function purgeLegacyCaches() {
     'larp_leaderboard_data_v5',
     'larp_leaderboard_data_v6',
     'larp_leaderboard_data_v7',
-    'larp_leaderboard_data_v8'
+    'larp_leaderboard_data_v8',
+    'larp_leaderboard_data_v9',
+    'larp_leaderboard_data_v10'
   ];
   legacyKeys.forEach(key => {
     try {
@@ -74,7 +77,6 @@ export class StorageService {
     this.sanitizeImageUrls();
     this.saveToLocalStorage();
 
-    // Connect Firebase
     this.setupFirebaseConnection();
 
     return this.data;
@@ -86,13 +88,10 @@ export class StorageService {
       if (fbInitSuccess) {
         console.log('🔥 Subscribing to Firestore entries live feed...');
         firebaseService.subscribeToEntries((remoteEntries) => {
-          console.log(`🔥 Received ${remoteEntries ? remoteEntries.length : 0} remote entries from Firestore.`);
           if (Array.isArray(remoteEntries)) {
-            // If remote entries exist in Firestore, sync them to local state
             if (remoteEntries.length > 0) {
               this.data.entries = remoteEntries;
             } else if (this.data.entries && this.data.entries.length > 0) {
-              // Push local entries up to Firebase if Firestore collection was brand new
               firebaseService.syncAllEntries(this.data.entries);
             }
             this.sanitizeImageUrls();
@@ -160,6 +159,34 @@ export class StorageService {
     }
   }
 
+  getCurrentMonthKey() {
+    const d = new Date();
+    return `${d.getFullYear()}-${d.getMonth() + 1}`;
+  }
+
+  hasVotedCurrentMonth() {
+    const monthKey = this.getCurrentMonthKey();
+    try {
+      const voted = JSON.parse(localStorage.getItem(VOTED_MONTHS_KEY) || '[]');
+      return voted.includes(monthKey);
+    } catch (e) {
+      return false;
+    }
+  }
+
+  markVotedCurrentMonth() {
+    const monthKey = this.getCurrentMonthKey();
+    try {
+      const voted = JSON.parse(localStorage.getItem(VOTED_MONTHS_KEY) || '[]');
+      if (!voted.includes(monthKey)) {
+        voted.push(monthKey);
+        localStorage.setItem(VOTED_MONTHS_KEY, JSON.stringify(voted));
+      }
+    } catch (e) {
+      console.error('Error saving voted month status:', e);
+    }
+  }
+
   getActiveWeekId() {
     return this.data && this.data.activeWeek ? this.data.activeWeek.id : 'week-1';
   }
@@ -175,7 +202,7 @@ export class StorageService {
   getActiveWeekEntries() {
     const activeId = this.getActiveWeekId();
     const all = this.getEntries();
-    const weekEntries = all.filter(e => !e.weekId || e.weekId === activeId);
+    const weekEntries = all.filter(e => e.weekId === activeId);
     return weekEntries.length >= 2 ? weekEntries : all;
   }
 
@@ -204,7 +231,6 @@ export class StorageService {
       entry.imageUrl = convertGoogleDriveUrl(entry.imageUrl);
     }
 
-    const activeWeekId = this.getActiveWeekId();
     let savedObject = null;
 
     const existingIndex = this.data.entries.findIndex(e => e.id === entry.id);
@@ -219,7 +245,7 @@ export class StorageService {
         wins: 0,
         losses: 0,
         totalVotes: 0,
-        weekId: activeWeekId
+        weekId: entry.weekId || 'pending'
       };
       this.data.entries.push(newEntry);
       savedObject = newEntry;
@@ -245,7 +271,7 @@ export class StorageService {
     }
   }
 
-  advanceToNewWeek(newWeekTitle) {
+  async advanceToNewWeek(newWeekTitle) {
     const newWeekId = `week-${Date.now()}`;
     const newWeek = {
       id: newWeekId,
@@ -262,8 +288,18 @@ export class StorageService {
     this.data.weeks.push(newWeek);
     this.data.activeWeek = newWeek;
 
+    this.data.entries.forEach(e => {
+      if (!e.weekId || e.weekId === 'pending') {
+        e.weekId = newWeekId;
+      }
+    });
+
     this.saveToLocalStorage();
     this.notify();
+
+    if (firebaseService.isConfigured()) {
+      await firebaseService.syncAllEntries(this.data.entries);
+    }
   }
 
   async recordMatchVote(winnerId, loserId) {

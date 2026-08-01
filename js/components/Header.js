@@ -25,18 +25,18 @@ export function renderHeader(activeTab, activeWeekTitle) {
             </div>
           </div>
 
-          <!-- Public Navigation Tabs -->
+          <!-- Public Navigation Tabs (Including ALL-TIME GOATs) -->
           <nav class="hidden md:flex items-center space-x-2 bg-slate-950/60 p-1.5 rounded-2xl border border-white/10">
-            <button id="tab-btn-leaderboard" class="flex items-center space-x-2 px-5 py-2.5 rounded-xl font-medium text-sm transition-all duration-300 ${
+            <button id="tab-btn-leaderboard" class="flex items-center space-x-2 px-4 py-2.5 rounded-xl font-medium text-sm transition-all duration-300 ${
               activeTab === 'leaderboard' 
                 ? 'bg-amber-500 text-slate-950 font-bold shadow-lg shadow-amber-500/30' 
                 : 'text-gray-300 hover:text-white hover:bg-white/5'
             }">
               <span>🏆</span>
-              <span>Leaderboard</span>
+              <span>Weekly Leaderboard</span>
             </button>
 
-            <button id="tab-btn-tournament" class="relative flex items-center space-x-2 px-5 py-2.5 rounded-xl font-medium text-sm transition-all duration-300 ${
+            <button id="tab-btn-tournament" class="relative flex items-center space-x-2 px-4 py-2.5 rounded-xl font-medium text-sm transition-all duration-300 ${
               activeTab === 'tournament' 
                 ? 'bg-amber-500 text-slate-950 font-bold shadow-lg shadow-amber-500/30' 
                 : 'text-gray-300 hover:text-white hover:bg-white/5'
@@ -44,13 +44,21 @@ export function renderHeader(activeTab, activeWeekTitle) {
               <span>⚔️</span>
               <span>Weekly 1v1 Vote</span>
             </button>
+
+            <button id="tab-btn-goats" class="flex items-center space-x-2 px-4 py-2.5 rounded-xl font-medium text-sm transition-all duration-300 ${
+              activeTab === 'goats' 
+                ? 'bg-gradient-to-r from-amber-500 to-yellow-300 text-slate-950 font-bold shadow-lg shadow-amber-500/30' 
+                : 'text-amber-400 hover:text-amber-300 hover:bg-white/5'
+            }">
+              <span>👑</span>
+              <span>ALL-TIME GOATs</span>
+            </button>
           </nav>
 
           <!-- Status & Force Sync Reload Button -->
           <div class="flex items-center space-x-3">
             
-            <!-- Force Sync Reload Button -->
-            <button id="btn-force-sync-reload" class="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-amber-500/30 text-amber-300 font-mono text-xs flex items-center space-x-1.5 transition-transform active:scale-95 shadow-md">
+            <button id="btn-force-sync-reload" class="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-amber-500/30 text-amber-300 font-mono text-xs flex items-center space-x-1.5 transition-transform active:scale-95 shadow-md">
               <span class="text-sm">🔄</span>
               <span class="hidden sm:inline">Sync Database</span>
             </button>
@@ -77,10 +85,13 @@ export function renderHeader(activeTab, activeWeekTitle) {
         <!-- Mobile Drawer -->
         <div id="mobile-drawer" class="hidden md:hidden pb-4 pt-2 border-t border-white/10 space-y-2">
           <button id="mob-btn-leaderboard" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-left font-medium text-sm ${activeTab === 'leaderboard' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-gray-300 bg-slate-900/60'}">
-            <span>🏆</span><span>Leaderboard</span>
+            <span>🏆</span><span>Weekly Leaderboard</span>
           </button>
           <button id="mob-btn-tournament" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-left font-medium text-sm ${activeTab === 'tournament' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-gray-300 bg-slate-900/60'}">
             <span>⚔️</span><span>Weekly 1v1 Vote</span>
+          </button>
+          <button id="mob-btn-goats" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-left font-medium text-sm ${activeTab === 'goats' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-amber-400 bg-slate-900/60'}">
+            <span>👑</span><span>ALL-TIME GOATs</span>
           </button>
         </div>
 
