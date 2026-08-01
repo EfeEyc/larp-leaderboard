@@ -6,9 +6,10 @@ import { renderAdminPortal } from './components/AdminPortal.js';
 import { renderEntryModal } from './components/EntryModal.js';
 import { renderGoatLeaderboard, GoatVoteManager } from './components/GoatLeaderboard.js';
 import { convertGoogleDriveUrl } from './gdriveHelper.js';
+import { compressImageFile } from './imageHelper.js';
 import { hashPassword, DEFAULT_ADMIN_HASH } from './cryptoHelper.js';
 
-const CURRENT_VERSION = 'v3.4.0';
+const CURRENT_VERSION = 'v4.0.0';
 
 class App {
   constructor() {
@@ -20,6 +21,9 @@ class App {
     this.goatSearchQuery = '';
     this.goatSortBy = 'wins';
     this.goatSubTab = 'rankings';
+
+    this.uploadMode = 'file'; // 'file' | 'url'
+    this.selectedImageFiles = [];
 
     this.selectedEntryModal = null;
     this.isAdminAuthenticated = false;
@@ -104,13 +108,11 @@ class App {
     let mainContent = '';
 
     if (this.activeTab === 'leaderboard') {
-      // ONLY show active week entries on Weekly Leaderboard (exclude pending/unassigned)
       const weeklyActiveEntries = entries.filter(e => e.weekId === activeWeekId);
       mainContent = renderLeaderboard(weeklyActiveEntries, this.filterCategory, this.searchQuery, this.sortBy);
     } else if (this.activeTab === 'tournament') {
       mainContent = renderTournamentVote(this.tourneyManager, storage, () => this.setTab('leaderboard'));
     } else if (this.activeTab === 'goats') {
-      // ONLY show activated entries on All-Time GOATs board (exclude pending/unassigned)
       const activatedEntries = entries.filter(e => e.weekId && e.weekId !== 'pending');
       mainContent = renderGoatLeaderboard(activatedEntries, this.goatSearchQuery, this.goatSortBy, this.goatSubTab, this.goatManager, storage);
     } else if (this.activeTab === 'admin') {
@@ -183,7 +185,7 @@ class App {
       this.render();
     });
 
-    // GOAT Search Input with Focus Preservation
+    // GOAT Search Input
     const goatSearchInput = document.getElementById('goat-search-input');
     if (goatSearchInput) {
       goatSearchInput.addEventListener('input', (e) => {
@@ -223,7 +225,7 @@ class App {
       }, 1200);
     });
 
-    // Leaderboard Search Input with Focus Preservation
+    // Leaderboard Search Input
     const searchInput = document.getElementById('search-input');
     if (searchInput) {
       searchInput.addEventListener('input', (e) => {
@@ -299,6 +301,58 @@ class App {
       }
     });
 
+    // Upload Mode Switcher (File vs URL)
+    document.getElementById('upload-tab-file')?.addEventListener('click', () => {
+      this.uploadMode = 'file';
+      document.getElementById('section-upload-file')?.classList.remove('hidden');
+      document.getElementById('section-upload-url')?.classList.add('hidden');
+      document.getElementById('upload-tab-file')?.classList.replace('text-gray-400', 'text-slate-950');
+      document.getElementById('upload-tab-file')?.classList.replace('bg-slate-900', 'bg-amber-500');
+      document.getElementById('upload-tab-url')?.classList.replace('text-slate-950', 'text-gray-400');
+      document.getElementById('upload-tab-url')?.classList.replace('bg-amber-500', 'bg-slate-900');
+    });
+
+    document.getElementById('upload-tab-url')?.addEventListener('click', () => {
+      this.uploadMode = 'url';
+      document.getElementById('section-upload-url')?.classList.remove('hidden');
+      document.getElementById('section-upload-file')?.classList.add('hidden');
+      document.getElementById('upload-tab-url')?.classList.replace('text-gray-400', 'text-slate-950');
+      document.getElementById('upload-tab-url')?.classList.replace('bg-slate-900', 'bg-amber-500');
+      document.getElementById('upload-tab-file')?.classList.replace('text-slate-950', 'text-gray-400');
+      document.getElementById('upload-tab-file')?.classList.replace('bg-amber-500', 'bg-slate-900');
+    });
+
+    // File Input Preview Handler
+    const fileInput = document.getElementById('entry-file-input');
+    if (fileInput) {
+      fileInput.addEventListener('change', async (e) => {
+        const files = Array.from(e.target.files);
+        if (files.length === 0) return;
+        this.selectedImageFiles = files;
+
+        const container = document.getElementById('file-previews-container');
+        if (container) {
+          container.innerHTML = '';
+          container.classList.remove('hidden');
+
+          for (const file of files) {
+            try {
+              const dataUrl = await compressImageFile(file);
+              const previewCard = document.createElement('div');
+              previewCard.className = 'p-2 bg-slate-900 rounded-xl border border-white/10 text-center space-y-1';
+              previewCard.innerHTML = `
+                <img src="${dataUrl}" class="w-full h-24 object-cover rounded-lg border border-white/10" />
+                <p class="text-[10px] font-mono text-amber-300 truncate">${file.name}</p>
+              `;
+              container.appendChild(previewCard);
+            } catch (err) {
+              console.error('Error compressing file preview:', err);
+            }
+          }
+        }
+      });
+    }
+
     // Activate Weekly Roster Button in Admin
     const handleAdvanceWeek = async () => {
       const weeksCount = (storage.data.weeks || []).length + 1;
@@ -313,7 +367,7 @@ class App {
     document.getElementById('btn-advance-week')?.addEventListener('click', handleAdvanceWeek);
     document.getElementById('btn-activate-accumulated')?.addEventListener('click', handleAdvanceWeek);
 
-    // Image Preview Tester in Admin
+    // Image Preview Tester for URL mode
     document.getElementById('btn-preview-image')?.addEventListener('click', () => {
       const inputUrl = document.getElementById('entry-image-url').value;
       if (!inputUrl) return;
@@ -329,22 +383,69 @@ class App {
       }
     });
 
-    // Add Entry Form
+    // Add Entry Form Submit Handler (Handles Direct File Uploads & URLs)
     document.getElementById('form-entry-add')?.addEventListener('submit', async (e) => {
       e.preventDefault();
       const form = e.target;
-      const title = document.getElementById('entry-title').value;
-      const imageUrl = document.getElementById('entry-image-url').value;
+      const titleInput = document.getElementById('entry-title').value.trim();
+      const submitBtn = document.getElementById('btn-submit-upload');
 
-      const saved = await storage.addOrUpdateEntry({
-        title, imageUrl, weekId: 'pending'
-      });
+      if (this.uploadMode === 'file') {
+        const fileInput = document.getElementById('entry-file-input');
+        const files = fileInput ? Array.from(fileInput.files) : [];
 
-      if (saved) {
-        alert(`✓ Uploaded "${title}" to accumulation pool! Click "ACTIVATE NEW WEEKLY ROSTER" when you want to launch the new week.`);
+        if (files.length === 0) {
+          alert('Please select at least one photo file from your phone or computer!');
+          return;
+        }
+
+        if (submitBtn) submitBtn.innerHTML = '⌛ Processing & Compressing Photos...';
+
+        let countSaved = 0;
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i];
+          const rawName = file.name.replace(/\.[^/.]+$/, "").replace(/[_]/g, " ");
+          const itemTitle = files.length === 1 && titleInput ? titleInput : rawName;
+
+          try {
+            const compressedDataUrl = await compressImageFile(file);
+            await storage.addOrUpdateEntry({
+              title: itemTitle,
+              imageUrl: compressedDataUrl,
+              weekId: 'pending'
+            });
+            countSaved++;
+          } catch (err) {
+            console.error('Failed to compress/save photo:', err);
+          }
+        }
+
+        alert(`✓ Successfully uploaded ${countSaved} LARPer photo(s) directly to your pending roster pool!`);
         form.reset();
-        document.getElementById('image-preview-container')?.classList.add('hidden');
+        this.selectedImageFiles = [];
+        document.getElementById('file-previews-container')?.classList.add('hidden');
+        if (submitBtn) submitBtn.innerHTML = '💾 UPLOAD LARPER TO ROSTER POOL';
         this.render();
+
+      } else {
+        const imageUrl = document.getElementById('entry-image-url').value;
+        if (!imageUrl) {
+          alert('Please enter an image URL or Google Drive link!');
+          return;
+        }
+
+        const saved = await storage.addOrUpdateEntry({
+          title: titleInput || 'Untitled LARPer',
+          imageUrl,
+          weekId: 'pending'
+        });
+
+        if (saved) {
+          alert(`✓ Uploaded "${titleInput || 'LARPer'}" to accumulation pool!`);
+          form.reset();
+          document.getElementById('image-preview-container')?.classList.add('hidden');
+          this.render();
+        }
       }
     });
 

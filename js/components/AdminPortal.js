@@ -7,7 +7,6 @@ export function renderAdminPortal(storage, isAuthenticated) {
   const activeWeek = storage.getActiveWeek();
   const activeWeekId = activeWeek.id || 'week-1';
 
-  // Count active vs pending entries
   const activeEntries = entries.filter(e => e.weekId === activeWeekId);
   const pendingEntries = entries.filter(e => !e.weekId || e.weekId === 'pending' || e.weekId !== activeWeekId);
 
@@ -51,7 +50,7 @@ export function renderAdminPortal(storage, isAuthenticated) {
             <span class="text-xl">👑</span>
             <h2 class="font-cinzel text-2xl font-bold text-gradient-gold">ADMINISTRATION DASHBOARD</h2>
           </div>
-          <p class="text-xs text-slate-400 mt-1">Upload LARPers (they accumulate for the new week), activate weekly rosters, configure Firebase.</p>
+          <p class="text-xs text-slate-400 mt-1">Direct photo uploads, weekly roster activation, Firebase settings.</p>
         </div>
 
         <div class="flex flex-wrap items-center gap-3">
@@ -85,35 +84,70 @@ export function renderAdminPortal(storage, isAuthenticated) {
         </p>
       </div>
 
-      <!-- Add New LARP Material Form -->
+      <!-- Add New LARP Material Form (Direct Drag & Drop File Upload + URL Mode) -->
       <div class="glass-panel p-8 rounded-3xl space-y-6">
         <h3 class="font-cinzel text-xl font-bold text-amber-300 border-b border-white/10 pb-3 flex items-center space-x-2">
-          <span>➕</span><span>UPLOAD NEW LARPER (ACCUMULATES FOR NEW WEEK)</span>
+          <span>📸</span><span>UPLOAD NEW LARPER</span>
         </h3>
 
+        <!-- Mode Selector: Direct Drag & Drop File vs URL Link -->
+        <div class="flex space-x-3 border-b border-white/10 pb-4">
+          <button type="button" id="upload-tab-file" class="px-5 py-2.5 rounded-xl font-mono text-xs font-bold bg-amber-500 text-slate-950 shadow-md">
+            📁 Direct Photo Upload (Drag & Drop / Mobile Photo)
+          </button>
+          <button type="button" id="upload-tab-url" class="px-5 py-2.5 rounded-xl font-mono text-xs text-gray-400 hover:text-white bg-slate-900 border border-white/10">
+            🔗 Google Drive Link / Web URL
+          </button>
+        </div>
+
         <form id="form-entry-add" class="space-y-6">
+          
           <div class="space-y-1">
             <label class="text-xs font-mono text-slate-300">LARPer / Material Name *</label>
             <input 
               type="text" 
               id="entry-title" 
-              required 
-              placeholder="e.g. Sir Cedric of Oakhaven" 
+              placeholder="e.g. Sir Cedric of Oakhaven (or leave empty to auto-use filename)" 
               class="w-full bg-slate-950 border border-white/15 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-500" 
             />
           </div>
 
-          <div class="space-y-2">
+          <!-- Section A: Direct File Upload Dropzone -->
+          <div id="section-upload-file" class="space-y-3">
+            <label class="text-xs font-mono text-slate-300">Select Image File(s) from Phone or Computer *</label>
+            
+            <div 
+              id="dropzone-area" 
+              class="border-2 border-dashed border-amber-500/40 hover:border-amber-400 bg-slate-950/60 hover:bg-slate-900/80 rounded-3xl p-8 text-center cursor-pointer transition-all duration-300 relative group"
+            >
+              <input type="file" id="entry-file-input" accept="image/*" multiple class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+              
+              <div class="space-y-3 pointer-events-none">
+                <div class="w-16 h-16 mx-auto rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-3xl group-hover:scale-110 transition-transform">
+                  📁
+                </div>
+                <div>
+                  <p class="font-cinzel text-base font-bold text-white">Click to Select Photos or Drag & Drop Here</p>
+                  <p class="text-xs text-slate-400 font-mono mt-1">Supports PNG, JPG, JPEG, WEBP (Supports multiple files at once!)</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Image File Preview List -->
+            <div id="file-previews-container" class="hidden grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3"></div>
+          </div>
+
+          <!-- Section B: Web URL / Google Drive Link -->
+          <div id="section-upload-url" class="hidden space-y-2">
             <div class="flex justify-between items-center">
-              <label class="text-xs font-mono text-slate-300">Image Source (Google Drive Share Link or Web Direct URL) *</label>
-              <span class="text-[11px] font-mono text-amber-400">Google Drive share links auto-convert</span>
+              <label class="text-xs font-mono text-slate-300">Google Drive Share Link or Web Direct Image URL *</label>
+              <span class="text-[11px] font-mono text-amber-400">Auto-converts view links</span>
             </div>
             <div class="flex gap-3">
               <input 
                 type="text" 
                 id="entry-image-url" 
-                required 
-                placeholder="Paste Google Drive share link (e.g. https://drive.google.com/file/d/.../view) or image URL" 
+                placeholder="Paste link e.g. https://drive.google.com/file/d/.../view" 
                 class="flex-1 bg-slate-950 border border-white/15 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-500" 
               />
               <button type="button" id="btn-preview-image" class="px-5 py-3 bg-slate-800 border border-white/10 text-amber-300 text-xs font-mono rounded-xl hover:bg-slate-700">
@@ -129,7 +163,7 @@ export function renderAdminPortal(storage, isAuthenticated) {
             </div>
           </div>
 
-          <button type="submit" class="w-full py-4 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-300 text-slate-950 font-black font-cinzel text-base shadow-xl shadow-amber-500/20">
+          <button type="submit" id="btn-submit-upload" class="w-full py-4 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-300 text-slate-950 font-black font-cinzel text-base shadow-xl shadow-amber-500/20 hover:scale-[1.01] transition-transform">
             💾 UPLOAD LARPER TO ROSTER POOL
           </button>
         </form>
