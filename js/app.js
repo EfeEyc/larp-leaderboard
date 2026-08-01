@@ -5,11 +5,11 @@ import { renderTournamentVote, TournamentVoteManager } from './components/Tourna
 import { renderAdminPortal } from './components/AdminPortal.js';
 import { renderEntryModal } from './components/EntryModal.js';
 import { renderGoatLeaderboard, GoatVoteManager } from './components/GoatLeaderboard.js';
-import { convertGoogleDriveUrl } from './gdriveHelper.js';
+import { convertGoogleDriveUrl, parseGoogleDriveFileIds, formatFileNameToTitle } from './gdriveHelper.js';
 import { compressImageFile } from './imageHelper.js';
 import { hashPassword, DEFAULT_ADMIN_HASH } from './cryptoHelper.js';
 
-const CURRENT_VERSION = 'v4.0.0';
+const CURRENT_VERSION = 'v5.0.0';
 
 class App {
   constructor() {
@@ -22,7 +22,7 @@ class App {
     this.goatSortBy = 'wins';
     this.goatSubTab = 'rankings';
 
-    this.uploadMode = 'file'; // 'file' | 'url'
+    this.uploadMode = 'gdrive'; // 'gdrive' | 'file' | 'url'
     this.selectedImageFiles = [];
 
     this.selectedEntryModal = null;
@@ -301,25 +301,82 @@ class App {
       }
     });
 
-    // Upload Mode Switcher (File vs URL)
-    document.getElementById('upload-tab-file')?.addEventListener('click', () => {
-      this.uploadMode = 'file';
-      document.getElementById('section-upload-file')?.classList.remove('hidden');
-      document.getElementById('section-upload-url')?.classList.add('hidden');
-      document.getElementById('upload-tab-file')?.classList.replace('text-gray-400', 'text-slate-950');
-      document.getElementById('upload-tab-file')?.classList.replace('bg-slate-900', 'bg-amber-500');
-      document.getElementById('upload-tab-url')?.classList.replace('text-slate-950', 'text-gray-400');
-      document.getElementById('upload-tab-url')?.classList.replace('bg-amber-500', 'bg-slate-900');
+    // Upload Mode Switcher (Google Drive vs File vs URL)
+    const setUploadMode = (mode) => {
+      this.uploadMode = mode;
+      document.getElementById('section-upload-gdrive')?.classList.toggle('hidden', mode !== 'gdrive');
+      document.getElementById('section-upload-file')?.classList.toggle('hidden', mode !== 'file');
+      document.getElementById('section-upload-url')?.classList.toggle('hidden', mode !== 'url');
+
+      const btnGdrive = document.getElementById('upload-tab-gdrive');
+      const btnFile = document.getElementById('upload-tab-file');
+      const btnUrl = document.getElementById('upload-tab-url');
+
+      if (btnGdrive && btnFile && btnUrl) {
+        btnGdrive.className = mode === 'gdrive' 
+          ? 'px-5 py-2.5 rounded-xl font-mono text-xs font-bold bg-amber-500 text-slate-950 shadow-md flex items-center space-x-2'
+          : 'px-5 py-2.5 rounded-xl font-mono text-xs text-gray-400 hover:text-white bg-slate-900 border border-white/10 flex items-center space-x-2';
+
+        btnFile.className = mode === 'file' 
+          ? 'px-5 py-2.5 rounded-xl font-mono text-xs font-bold bg-amber-500 text-slate-950 shadow-md flex items-center space-x-2'
+          : 'px-5 py-2.5 rounded-xl font-mono text-xs text-gray-400 hover:text-white bg-slate-900 border border-white/10 flex items-center space-x-2';
+
+        btnUrl.className = mode === 'url' 
+          ? 'px-5 py-2.5 rounded-xl font-mono text-xs font-bold bg-amber-500 text-slate-950 shadow-md flex items-center space-x-2'
+          : 'px-5 py-2.5 rounded-xl font-mono text-xs text-gray-400 hover:text-white bg-slate-900 border border-white/10 flex items-center space-x-2';
+      }
+    };
+
+    document.getElementById('upload-tab-gdrive')?.addEventListener('click', () => setUploadMode('gdrive'));
+    document.getElementById('upload-tab-file')?.addEventListener('click', () => setUploadMode('file'));
+    document.getElementById('upload-tab-url')?.addEventListener('click', () => setUploadMode('url'));
+
+    // Google Drive Picker Button
+    document.getElementById('btn-open-gdrive-picker')?.addEventListener('click', () => {
+      const linksPasted = prompt('☁️ Paste your Google Drive photo share link(s) or folder link below:\n\n(Tip: You can paste multiple links separated by spaces or new lines!)');
+      if (linksPasted) {
+        const ids = parseGoogleDriveFileIds(linksPasted);
+        if (ids.length > 0) {
+          ids.forEach(async (id, idx) => {
+            const embedUrl = `https://lh3.googleusercontent.com/d/${id}=s1600`;
+            await storage.addOrUpdateEntry({
+              title: `Google Drive LARPer #${idx + 1}`,
+              imageUrl: embedUrl,
+              weekId: 'pending'
+            });
+          });
+          alert(`✓ Successfully imported ${ids.length} Google Drive photo(s) into your pending roster!`);
+          this.render();
+        } else {
+          alert('Could not detect valid Google Drive file IDs. Please check your links!');
+        }
+      }
     });
 
-    document.getElementById('upload-tab-url')?.addEventListener('click', () => {
-      this.uploadMode = 'url';
-      document.getElementById('section-upload-url')?.classList.remove('hidden');
-      document.getElementById('section-upload-file')?.classList.add('hidden');
-      document.getElementById('upload-tab-url')?.classList.replace('text-gray-400', 'text-slate-950');
-      document.getElementById('upload-tab-url')?.classList.replace('bg-slate-900', 'bg-amber-500');
-      document.getElementById('upload-tab-file')?.classList.replace('text-slate-950', 'text-gray-400');
-      document.getElementById('upload-tab-file')?.classList.replace('bg-amber-500', 'bg-slate-900');
+    // Batch Google Drive Link Import Button
+    document.getElementById('btn-import-batch-gdrive')?.addEventListener('click', async () => {
+      const text = document.getElementById('input-batch-gdrive-links')?.value || '';
+      const ids = parseGoogleDriveFileIds(text);
+      if (ids.length === 0) {
+        alert('Please paste one or more Google Drive share links!');
+        return;
+      }
+
+      let count = 0;
+      for (let i = 0; i < ids.length; i++) {
+        const id = ids[i];
+        const embedUrl = `https://lh3.googleusercontent.com/d/${id}=s1600`;
+        await storage.addOrUpdateEntry({
+          title: `Drive LARPer ${i + 1}`,
+          imageUrl: embedUrl,
+          weekId: 'pending'
+        });
+        count++;
+      }
+
+      alert(`✓ Successfully imported ${count} Google Drive photo(s) into your pending roster!`);
+      document.getElementById('input-batch-gdrive-links').value = '';
+      this.render();
     });
 
     // File Input Preview Handler
@@ -342,7 +399,7 @@ class App {
               previewCard.className = 'p-2 bg-slate-900 rounded-xl border border-white/10 text-center space-y-1';
               previewCard.innerHTML = `
                 <img src="${dataUrl}" class="w-full h-24 object-cover rounded-lg border border-white/10" />
-                <p class="text-[10px] font-mono text-amber-300 truncate">${file.name}</p>
+                <p class="text-[10px] font-mono text-amber-300 truncate">${formatFileNameToTitle(file.name)}</p>
               `;
               container.appendChild(previewCard);
             } catch (err) {
@@ -352,6 +409,65 @@ class App {
         }
       });
     }
+
+    // Direct File Upload Submit Handler
+    document.getElementById('btn-submit-file-upload')?.addEventListener('click', async () => {
+      const fileInput = document.getElementById('entry-file-input');
+      const titleInput = document.getElementById('entry-title-file')?.value.trim() || '';
+      const files = fileInput ? Array.from(fileInput.files) : [];
+
+      if (files.length === 0) {
+        alert('Please select at least one photo file!');
+        return;
+      }
+
+      let countSaved = 0;
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const autoTitle = formatFileNameToTitle(file.name);
+        const itemTitle = files.length === 1 && titleInput ? titleInput : autoTitle;
+
+        try {
+          const compressedDataUrl = await compressImageFile(file);
+          await storage.addOrUpdateEntry({
+            title: itemTitle,
+            imageUrl: compressedDataUrl,
+            weekId: 'pending'
+          });
+          countSaved++;
+        } catch (err) {
+          console.error('Failed to save photo:', err);
+        }
+      }
+
+      alert(`✓ Uploaded ${countSaved} photo(s) to pending roster! Names auto-set from filenames.`);
+      fileInput.value = '';
+      if (document.getElementById('entry-title-file')) document.getElementById('entry-title-file').value = '';
+      document.getElementById('file-previews-container')?.classList.add('hidden');
+      this.render();
+    });
+
+    // Single URL Form Submit Handler
+    document.getElementById('form-entry-add-url')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const titleInput = document.getElementById('entry-title-url').value.trim();
+      const imageUrl = document.getElementById('entry-image-url').value.trim();
+
+      if (!imageUrl) return;
+
+      const saved = await storage.addOrUpdateEntry({
+        title: titleInput || 'Untitled LARPer',
+        imageUrl: convertGoogleDriveUrl(imageUrl),
+        weekId: 'pending'
+      });
+
+      if (saved) {
+        alert(`✓ Uploaded "${titleInput || 'LARPer'}" to pending roster!`);
+        document.getElementById('form-entry-add-url').reset();
+        document.getElementById('image-preview-container')?.classList.add('hidden');
+        this.render();
+      }
+    });
 
     // Activate Weekly Roster Button in Admin
     const handleAdvanceWeek = async () => {
@@ -380,72 +496,6 @@ class App {
         img.src = converted;
         urlText.textContent = converted;
         container.classList.remove('hidden');
-      }
-    });
-
-    // Add Entry Form Submit Handler (Handles Direct File Uploads & URLs)
-    document.getElementById('form-entry-add')?.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const form = e.target;
-      const titleInput = document.getElementById('entry-title').value.trim();
-      const submitBtn = document.getElementById('btn-submit-upload');
-
-      if (this.uploadMode === 'file') {
-        const fileInput = document.getElementById('entry-file-input');
-        const files = fileInput ? Array.from(fileInput.files) : [];
-
-        if (files.length === 0) {
-          alert('Please select at least one photo file from your phone or computer!');
-          return;
-        }
-
-        if (submitBtn) submitBtn.innerHTML = '⌛ Processing & Compressing Photos...';
-
-        let countSaved = 0;
-        for (let i = 0; i < files.length; i++) {
-          const file = files[i];
-          const rawName = file.name.replace(/\.[^/.]+$/, "").replace(/[_]/g, " ");
-          const itemTitle = files.length === 1 && titleInput ? titleInput : rawName;
-
-          try {
-            const compressedDataUrl = await compressImageFile(file);
-            await storage.addOrUpdateEntry({
-              title: itemTitle,
-              imageUrl: compressedDataUrl,
-              weekId: 'pending'
-            });
-            countSaved++;
-          } catch (err) {
-            console.error('Failed to compress/save photo:', err);
-          }
-        }
-
-        alert(`✓ Successfully uploaded ${countSaved} LARPer photo(s) directly to your pending roster pool!`);
-        form.reset();
-        this.selectedImageFiles = [];
-        document.getElementById('file-previews-container')?.classList.add('hidden');
-        if (submitBtn) submitBtn.innerHTML = '💾 UPLOAD LARPER TO ROSTER POOL';
-        this.render();
-
-      } else {
-        const imageUrl = document.getElementById('entry-image-url').value;
-        if (!imageUrl) {
-          alert('Please enter an image URL or Google Drive link!');
-          return;
-        }
-
-        const saved = await storage.addOrUpdateEntry({
-          title: titleInput || 'Untitled LARPer',
-          imageUrl,
-          weekId: 'pending'
-        });
-
-        if (saved) {
-          alert(`✓ Uploaded "${titleInput || 'LARPer'}" to accumulation pool!`);
-          form.reset();
-          document.getElementById('image-preview-container')?.classList.add('hidden');
-          this.render();
-        }
       }
     });
 

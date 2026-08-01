@@ -50,7 +50,7 @@ export function renderAdminPortal(storage, isAuthenticated) {
             <span class="text-xl">👑</span>
             <h2 class="font-cinzel text-2xl font-bold text-gradient-gold">ADMINISTRATION DASHBOARD</h2>
           </div>
-          <p class="text-xs text-slate-400 mt-1">Direct photo uploads, weekly roster activation, Firebase settings.</p>
+          <p class="text-xs text-slate-400 mt-1">Google Drive Picker, photo uploads, weekly roster activation, Firebase settings.</p>
         </div>
 
         <div class="flex flex-wrap items-center gap-3">
@@ -84,89 +84,125 @@ export function renderAdminPortal(storage, isAuthenticated) {
         </p>
       </div>
 
-      <!-- Add New LARP Material Form (Direct Drag & Drop File Upload + URL Mode) -->
+      <!-- Upload Section with Google Drive Picker & Direct Photo Upload -->
       <div class="glass-panel p-8 rounded-3xl space-y-6">
         <h3 class="font-cinzel text-xl font-bold text-amber-300 border-b border-white/10 pb-3 flex items-center space-x-2">
-          <span>📸</span><span>UPLOAD NEW LARPER</span>
+          <span>📸</span><span>UPLOAD NEW LARPERS</span>
         </h3>
 
-        <!-- Mode Selector: Direct Drag & Drop File vs URL Link -->
-        <div class="flex space-x-3 border-b border-white/10 pb-4">
-          <button type="button" id="upload-tab-file" class="px-5 py-2.5 rounded-xl font-mono text-xs font-bold bg-amber-500 text-slate-950 shadow-md">
-            📁 Direct Photo Upload (Drag & Drop / Mobile Photo)
+        <!-- Mode Selector: Google Drive Picker vs Direct Photo Upload vs URL -->
+        <div class="flex flex-wrap gap-2 border-b border-white/10 pb-4">
+          <button type="button" id="upload-tab-gdrive" class="px-5 py-2.5 rounded-xl font-mono text-xs font-bold bg-amber-500 text-slate-950 shadow-md flex items-center space-x-2">
+            <span>☁️ Choose from Google Drive</span>
           </button>
-          <button type="button" id="upload-tab-url" class="px-5 py-2.5 rounded-xl font-mono text-xs text-gray-400 hover:text-white bg-slate-900 border border-white/10">
-            🔗 Google Drive Link / Web URL
+          <button type="button" id="upload-tab-file" class="px-5 py-2.5 rounded-xl font-mono text-xs text-gray-400 hover:text-white bg-slate-900 border border-white/10 flex items-center space-x-2">
+            <span>📁 Direct Photo Upload</span>
+          </button>
+          <button type="button" id="upload-tab-url" class="px-5 py-2.5 rounded-xl font-mono text-xs text-gray-400 hover:text-white bg-slate-900 border border-white/10 flex items-center space-x-2">
+            <span>🔗 Paste Link / URLs</span>
           </button>
         </div>
 
-        <form id="form-entry-add" class="space-y-6">
-          
+        <!-- Section 1: Google Drive Picker Mode -->
+        <div id="section-upload-gdrive" class="space-y-4">
+          <div class="p-6 bg-slate-950/80 rounded-2xl border border-amber-500/30 text-center space-y-4">
+            <div class="w-16 h-16 mx-auto rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-3xl">
+              ☁️
+            </div>
+            <div>
+              <h4 class="font-cinzel text-lg font-bold text-white">Select Photos Directly from Google Drive</h4>
+              <p class="text-xs text-slate-400 font-mono mt-1">
+                Select one or multiple photos from your Google Drive. Names will automatically be set to the file names!
+              </p>
+            </div>
+
+            <button type="button" id="btn-open-gdrive-picker" class="px-8 py-3.5 bg-gradient-to-r from-amber-500 to-yellow-300 text-slate-950 font-black font-cinzel text-sm rounded-xl shadow-lg shadow-amber-500/20 hover:scale-105 transition-transform inline-flex items-center space-x-2">
+              <span>☁️ OPEN GOOGLE DRIVE PICKER</span>
+            </button>
+          </div>
+
+          <!-- Batch Drive Link Paste Fallback -->
+          <div class="p-4 bg-slate-950/60 rounded-2xl border border-white/10 space-y-3">
+            <label class="text-xs font-mono text-amber-300 font-bold block">Or Paste Multiple Google Drive Share Links / Folder Links at Once:</label>
+            <textarea 
+              id="input-batch-gdrive-links" 
+              rows="3" 
+              placeholder="Paste one or more Google Drive share links (e.g. https://drive.google.com/file/d/1A2b3C.../view)..." 
+              class="w-full bg-slate-950 border border-white/15 rounded-xl px-4 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-amber-500 font-mono"
+            ></textarea>
+            <button type="button" id="btn-import-batch-gdrive" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 font-mono text-xs font-bold rounded-xl">
+              ⚡ IMPORT ALL GOOGLE DRIVE LINKS
+            </button>
+          </div>
+        </div>
+
+        <!-- Section 2: Direct File Upload Dropzone Mode -->
+        <div id="section-upload-file" class="hidden space-y-4">
           <div class="space-y-1">
-            <label class="text-xs font-mono text-slate-300">LARPer / Material Name *</label>
+            <label class="text-xs font-mono text-slate-300">LARPer / Material Name (Optional)</label>
             <input 
               type="text" 
-              id="entry-title" 
-              placeholder="e.g. Sir Cedric of Oakhaven (or leave empty to auto-use filename)" 
+              id="entry-title-file" 
+              placeholder="Leave empty to auto-use filename (e.g. Sir Cedric)" 
               class="w-full bg-slate-950 border border-white/15 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-500" 
             />
           </div>
 
-          <!-- Section A: Direct File Upload Dropzone -->
-          <div id="section-upload-file" class="space-y-3">
-            <label class="text-xs font-mono text-slate-300">Select Image File(s) from Phone or Computer *</label>
+          <div 
+            id="dropzone-area" 
+            class="border-2 border-dashed border-amber-500/40 hover:border-amber-400 bg-slate-950/60 hover:bg-slate-900/80 rounded-3xl p-8 text-center cursor-pointer transition-all duration-300 relative group"
+          >
+            <input type="file" id="entry-file-input" accept="image/*" multiple class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
             
-            <div 
-              id="dropzone-area" 
-              class="border-2 border-dashed border-amber-500/40 hover:border-amber-400 bg-slate-950/60 hover:bg-slate-900/80 rounded-3xl p-8 text-center cursor-pointer transition-all duration-300 relative group"
-            >
-              <input type="file" id="entry-file-input" accept="image/*" multiple class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
-              
-              <div class="space-y-3 pointer-events-none">
-                <div class="w-16 h-16 mx-auto rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-3xl group-hover:scale-110 transition-transform">
-                  📁
-                </div>
-                <div>
-                  <p class="font-cinzel text-base font-bold text-white">Click to Select Photos or Drag & Drop Here</p>
-                  <p class="text-xs text-slate-400 font-mono mt-1">Supports PNG, JPG, JPEG, WEBP (Supports multiple files at once!)</p>
-                </div>
+            <div class="space-y-3 pointer-events-none">
+              <div class="w-16 h-16 mx-auto rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-3xl group-hover:scale-110 transition-transform">
+                📁
               </div>
-            </div>
-
-            <!-- Image File Preview List -->
-            <div id="file-previews-container" class="hidden grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3"></div>
-          </div>
-
-          <!-- Section B: Web URL / Google Drive Link -->
-          <div id="section-upload-url" class="hidden space-y-2">
-            <div class="flex justify-between items-center">
-              <label class="text-xs font-mono text-slate-300">Google Drive Share Link or Web Direct Image URL *</label>
-              <span class="text-[11px] font-mono text-amber-400">Auto-converts view links</span>
-            </div>
-            <div class="flex gap-3">
-              <input 
-                type="text" 
-                id="entry-image-url" 
-                placeholder="Paste link e.g. https://drive.google.com/file/d/.../view" 
-                class="flex-1 bg-slate-950 border border-white/15 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-500" 
-              />
-              <button type="button" id="btn-preview-image" class="px-5 py-3 bg-slate-800 border border-white/10 text-amber-300 text-xs font-mono rounded-xl hover:bg-slate-700">
-                Test Preview
-              </button>
-            </div>
-            <div id="image-preview-container" class="hidden mt-3 p-3 bg-slate-950/80 rounded-2xl border border-white/10 flex items-center space-x-4">
-              <img id="image-preview-img" src="" alt="Preview" class="w-20 h-20 object-cover rounded-xl border border-white/10" />
-              <div class="text-xs font-mono space-y-1">
-                <p class="text-emerald-400 font-bold">✓ Direct Embed URL Generated:</p>
-                <p id="image-preview-url" class="text-slate-400 break-all text-[10px]"></p>
+              <div>
+                <p class="font-cinzel text-base font-bold text-white">Click to Select Photos or Drag & Drop Here</p>
+                <p class="text-xs text-slate-400 font-mono mt-1">Supports PNG, JPG, JPEG, WEBP (Multiple selection supported!)</p>
               </div>
             </div>
           </div>
 
-          <button type="submit" id="btn-submit-upload" class="w-full py-4 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-300 text-slate-950 font-black font-cinzel text-base shadow-xl shadow-amber-500/20 hover:scale-[1.01] transition-transform">
-            💾 UPLOAD LARPER TO ROSTER POOL
+          <div id="file-previews-container" class="hidden grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3"></div>
+
+          <button type="button" id="btn-submit-file-upload" class="w-full py-4 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-300 text-slate-950 font-black font-cinzel text-base shadow-xl shadow-amber-500/20 hover:scale-[1.01] transition-transform">
+            💾 UPLOAD SELECTED PHOTOS TO ROSTER POOL
           </button>
-        </form>
+        </div>
+
+        <!-- Section 3: Web URL / Single Link Mode -->
+        <div id="section-upload-url" class="hidden space-y-4">
+          <form id="form-entry-add-url" class="space-y-4">
+            <div class="space-y-1">
+              <label class="text-xs font-mono text-slate-300">LARPer Name *</label>
+              <input type="text" id="entry-title-url" placeholder="e.g. Sir Cedric of Oakhaven" class="w-full bg-slate-950 border border-white/15 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-500" required />
+            </div>
+
+            <div class="space-y-2">
+              <label class="text-xs font-mono text-slate-300">Google Drive Share Link or Web Direct Image URL *</label>
+              <div class="flex gap-3">
+                <input type="text" id="entry-image-url" placeholder="Paste link e.g. https://drive.google.com/file/d/.../view" class="flex-1 bg-slate-950 border border-white/15 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-500" required />
+                <button type="button" id="btn-preview-image" class="px-5 py-3 bg-slate-800 border border-white/10 text-amber-300 text-xs font-mono rounded-xl hover:bg-slate-700">
+                  Test Preview
+                </button>
+              </div>
+              <div id="image-preview-container" class="hidden mt-3 p-3 bg-slate-950/80 rounded-2xl border border-white/10 flex items-center space-x-4">
+                <img id="image-preview-img" src="" alt="Preview" class="w-20 h-20 object-cover rounded-xl border border-white/10" />
+                <div class="text-xs font-mono space-y-1">
+                  <p class="text-emerald-400 font-bold">✓ Direct Embed URL Generated:</p>
+                  <p id="image-preview-url" class="text-slate-400 break-all text-[10px]"></p>
+                </div>
+              </div>
+            </div>
+
+            <button type="submit" class="w-full py-4 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-300 text-slate-950 font-black font-cinzel text-base shadow-xl shadow-amber-500/20">
+              💾 UPLOAD LARPER TO ROSTER POOL
+            </button>
+          </form>
+        </div>
+
       </div>
 
       <!-- Manage Materials Table -->
