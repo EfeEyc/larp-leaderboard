@@ -1,0 +1,27 @@
+{
+  "activeWeek": {
+    "id": "week-1",
+    "title": "Week 1",
+    "status": "active"
+  },
+  "weeks": [
+    {
+      "id": "week-1",
+      "title": "Week 1",
+      "status": "active"
+    }
+  ],
+  "entries": [],
+  "config": {
+    "adminPassword": "admin",
+    "firebaseConfig": {
+      "apiKey": "",
+      "authDomain": "",
+      "projectId": "",
+      "storageBucket": "",
+      "messagingSenderId": "",
+      "appId": ""
+    },
+    "activeStorage": "local"
+  }
+}
