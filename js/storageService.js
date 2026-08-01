@@ -2,7 +2,7 @@ import { firebaseService } from './firebaseService.js';
 import { convertGoogleDriveUrl } from './gdriveHelper.js';
 import { DEFAULT_ADMIN_HASH } from './cryptoHelper.js';
 
-const LOCAL_STORAGE_KEY = 'larp_leaderboard_data_v7';
+const LOCAL_STORAGE_KEY = 'larp_leaderboard_data_v8';
 const VOTED_WEEKS_KEY = 'larp_leaderboard_voted_weeks';
 
 function purgeLegacyCaches() {
@@ -78,7 +78,7 @@ export class StorageService {
       if (fbInitSuccess) {
         console.log('🔥 Connecting visitor to Firebase Firestore...');
         firebaseService.subscribeToEntries((remoteEntries) => {
-          if (remoteEntries) {
+          if (remoteEntries && remoteEntries.length > 0) {
             this.data.entries = remoteEntries;
             this.sanitizeImageUrls();
             this.saveToLocalStorage();
@@ -191,9 +191,13 @@ export class StorageService {
       entry.imageUrl = convertGoogleDriveUrl(entry.imageUrl);
     }
 
+    const activeWeekId = this.getActiveWeekId();
+    let savedObject = null;
+
     const existingIndex = this.data.entries.findIndex(e => e.id === entry.id);
     if (existingIndex >= 0) {
       this.data.entries[existingIndex] = { ...this.data.entries[existingIndex], ...entry };
+      savedObject = this.data.entries[existingIndex];
     } else {
       const newEntry = {
         id: entry.id || `larp-${Date.now()}-${Math.floor(Math.random()*1000)}`,
@@ -202,19 +206,20 @@ export class StorageService {
         wins: 0,
         losses: 0,
         totalVotes: 0,
-        weekId: entry.weekId || this.getActiveWeekId()
+        weekId: activeWeekId
       };
       this.data.entries.push(newEntry);
+      savedObject = newEntry;
     }
 
     this.saveToLocalStorage();
 
-    if (firebaseService.isConfigured()) {
-      const savedEntry = this.getEntryById(entry.id) || entry;
-      await firebaseService.saveEntry(savedEntry);
+    if (firebaseService.isConfigured() && savedObject) {
+      await firebaseService.saveEntry(savedObject);
     }
 
     this.notify();
+    return savedObject;
   }
 
   async deleteEntry(id) {

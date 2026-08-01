@@ -108,7 +108,6 @@ class App {
       if (drawer) drawer.classList.toggle('hidden');
     });
 
-    // 🔄 Force Sync Reload Button (Fetches fresh data.json & connects to Firebase)
     document.getElementById('btn-force-sync-reload')?.addEventListener('click', async () => {
       const btn = document.getElementById('btn-force-sync-reload');
       if (btn) btn.innerHTML = '⌛ Syncing...';
@@ -253,15 +252,20 @@ class App {
     // Add Entry Form
     document.getElementById('form-entry-add')?.addEventListener('submit', async (e) => {
       e.preventDefault();
+      const form = e.target;
       const title = document.getElementById('entry-title').value;
       const imageUrl = document.getElementById('entry-image-url').value;
 
-      await storage.addOrUpdateEntry({
+      const saved = await storage.addOrUpdateEntry({
         title, imageUrl
       });
 
-      alert(`✓ Successfully saved "${title}" to LARP Leaderboard!`);
-      this.render();
+      if (saved) {
+        alert(`✓ Successfully uploaded "${title}"!`);
+        form.reset();
+        document.getElementById('image-preview-container')?.classList.add('hidden');
+        this.render();
+      }
     });
 
     // Firebase Config Form

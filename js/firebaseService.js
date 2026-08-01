@@ -1,6 +1,5 @@
-// Import Firebase Web SDK v10 modules via ESM CDN
-import { initializeApp, getApps, deleteApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
-import { getFirestore, collection, doc, onSnapshot, setDoc, updateDoc, getDocs, deleteDoc } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+import { initializeApp, getApps } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
+import { getFirestore, collection, doc, onSnapshot, setDoc, updateDoc, deleteDoc } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
 import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js';
 
 let app = null;
@@ -24,7 +23,6 @@ export const firebaseService = {
     try {
       const existingApps = getApps();
       if (existingApps.length > 0) {
-        // Clear existing
         app = existingApps[0];
       } else {
         app = initializeApp(config);
@@ -55,9 +53,13 @@ export const firebaseService = {
         snapshot.forEach((docSnap) => {
           entries.push({ id: docSnap.id, ...docSnap.data() });
         });
+        console.log(`🔥 Received ${entries.length} entries from Firebase Firestore.`);
         callback(entries);
       }, (error) => {
         console.error('Firebase snapshot error:', error);
+        if (error.code === 'permission-denied') {
+          console.warn('⚠️ Firestore Rules Permission Denied. Please set Firestore Rules to: allow read, write: if true;');
+        }
       });
       return unsubscribeEntries;
     } catch (e) {
@@ -84,9 +86,11 @@ export const firebaseService = {
     try {
       const entryRef = doc(db, 'entries', entry.id);
       await setDoc(entryRef, entry, { merge: true });
+      console.log('✓ Successfully saved entry to Firestore:', entry.title);
       return true;
     } catch (err) {
       console.error('Failed to save entry in Firebase:', err);
+      alert('⚠️ Firebase Write Error: ' + err.message + '\n\nMake sure your Firestore Security Rules in Firebase Console are set to: allow read, write: if true;');
       return false;
     }
   },
