@@ -8,6 +8,8 @@ import { renderGoatLeaderboard, GoatVoteManager } from './components/GoatLeaderb
 import { convertGoogleDriveUrl } from './gdriveHelper.js';
 import { hashPassword, DEFAULT_ADMIN_HASH } from './cryptoHelper.js';
 
+const CURRENT_VERSION = 'v3.2.0';
+
 class App {
   constructor() {
     this.activeTab = 'leaderboard';
@@ -26,7 +28,14 @@ class App {
   }
 
   async init() {
-    await storage.init();
+    // Safari / WebKit cache buster check
+    const lastVer = sessionStorage.getItem('larp_app_ver');
+    if (lastVer !== CURRENT_VERSION) {
+      sessionStorage.setItem('larp_app_ver', CURRENT_VERSION);
+      await storage.init(true);
+    } else {
+      await storage.init();
+    }
     
     this.checkInitialRoute();
 
