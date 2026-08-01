@@ -2,7 +2,7 @@ import { firebaseService } from './firebaseService.js';
 import { convertGoogleDriveUrl } from './gdriveHelper.js';
 import { DEFAULT_ADMIN_HASH } from './cryptoHelper.js';
 
-const LOCAL_STORAGE_KEY = 'larp_leaderboard_data_v5';
+const LOCAL_STORAGE_KEY = 'larp_leaderboard_data_v6';
 const VOTED_WEEKS_KEY = 'larp_leaderboard_voted_weeks';
 
 export class StorageService {
@@ -12,6 +12,18 @@ export class StorageService {
   }
 
   async init() {
+    // 1. ALWAYS fetch fresh data.json to pick up global firebaseConfig and week settings
+    let defaultData = null;
+    try {
+      const res = await fetch('data.json?t=' + Date.now());
+      if (res.ok) {
+        defaultData = await res.json();
+      }
+    } catch (e) {
+      console.warn('Could not load default data.json:', e);
+    }
+
+    // 2. Load LocalStorage cached state if available
     const cached = localStorage.getItem(LOCAL_STORAGE_KEY);
     if (cached) {
       try {
@@ -22,18 +34,7 @@ export class StorageService {
     }
 
     if (!this.data) {
-      try {
-        const res = await fetch('data.json?v=' + Date.now());
-        if (res.ok) {
-          this.data = await res.json();
-        }
-      } catch (e) {
-        console.warn('Could not load default data.json:', e);
-      }
-    }
-
-    if (!this.data) {
-      this.data = {
+      this.data = defaultData || {
         activeWeek: { id: 'week-1', title: 'Week 1', status: 'active' },
         weeks: [{ id: 'week-1', title: 'Week 1', status: 'active' }],
         entries: [],
@@ -41,15 +42,26 @@ export class StorageService {
       };
     }
 
+    // 3. CRITICAL: Always merge Firebase Config from data.json so ALL visitors connect to Firestore!
+    if (defaultData && defaultData.config && defaultData.config.firebaseConfig && defaultData.config.firebaseConfig.apiKey) {
+      this.data.config = this.data.config || {};
+      this.data.config.firebaseConfig = defaultData.config.firebaseConfig;
+      if (defaultData.activeWeek) {
+        this.data.activeWeek = defaultData.activeWeek;
+      }
+    }
+
     this.sanitizeImageUrls();
     this.saveToLocalStorage();
 
-    // Initialize Firebase for ALL visitors if config is present
+    // 4. Initialize Firebase for ALL visitors automatically!
     if (this.data.config && this.data.config.firebaseConfig && this.data.config.firebaseConfig.apiKey) {
       const fbInitSuccess = firebaseService.init(this.data.config.firebaseConfig);
       if (fbInitSuccess) {
+        console.log('🔥 Connecting visitor to Firebase Firestore...');
         firebaseService.subscribeToEntries((remoteEntries) => {
-          if (remoteEntries && remoteEntries.length > 0) {
+          console.log(`🔥 Received ${remoteEntries ? remoteEntries.length : 0} remote entries from Firestore!`);
+          if (remoteEntries) {
             this.data.entries = remoteEntries;
             this.sanitizeImageUrls();
             this.saveToLocalStorage();
@@ -74,7 +86,7 @@ export class StorageService {
   }
 
   sanitizeImageUrls() {
-    if (this.data.entries) {
+    if (this.data && this.data.entries) {
       this.data.entries.forEach(entry => {
         if (entry.imageUrl) {
           entry.imageUrl = convertGoogleDriveUrl(entry.imageUrl);
@@ -243,7 +255,6 @@ export class StorageService {
     return { winner, loser };
   }
 
-  // Export JSON with firebaseConfig included so ALL visitors connect automatically
   exportDataJson() {
     const jsonStr = JSON.stringify(this.data, null, 2);
     const blob = new Blob([jsonStr], { type: 'application/json' });
