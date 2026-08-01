@@ -8,7 +8,7 @@ import { renderGoatLeaderboard, GoatVoteManager } from './components/GoatLeaderb
 import { convertGoogleDriveUrl } from './gdriveHelper.js';
 import { hashPassword, DEFAULT_ADMIN_HASH } from './cryptoHelper.js';
 
-const CURRENT_VERSION = 'v3.3.0';
+const CURRENT_VERSION = 'v3.4.0';
 
 class App {
   constructor() {
@@ -91,7 +91,6 @@ class App {
     const appEl = document.getElementById('app');
     if (!appEl) return;
 
-    // Track active element before DOM re-render
     const activeEl = document.activeElement;
     if (activeEl && (activeEl.id === 'search-input' || activeEl.id === 'goat-search-input')) {
       this.focusedElementId = activeEl.id;
@@ -100,15 +99,20 @@ class App {
 
     const entries = storage.getEntries();
     const activeWeek = storage.getActiveWeek();
+    const activeWeekId = activeWeek ? activeWeek.id : 'week-1';
 
     let mainContent = '';
 
     if (this.activeTab === 'leaderboard') {
-      mainContent = renderLeaderboard(entries, this.filterCategory, this.searchQuery, this.sortBy);
+      // ONLY show active week entries on Weekly Leaderboard (exclude pending/unassigned)
+      const weeklyActiveEntries = entries.filter(e => e.weekId === activeWeekId);
+      mainContent = renderLeaderboard(weeklyActiveEntries, this.filterCategory, this.searchQuery, this.sortBy);
     } else if (this.activeTab === 'tournament') {
       mainContent = renderTournamentVote(this.tourneyManager, storage, () => this.setTab('leaderboard'));
     } else if (this.activeTab === 'goats') {
-      mainContent = renderGoatLeaderboard(entries, this.goatSearchQuery, this.goatSortBy, this.goatSubTab, this.goatManager, storage);
+      // ONLY show activated entries on All-Time GOATs board (exclude pending/unassigned)
+      const activatedEntries = entries.filter(e => e.weekId && e.weekId !== 'pending');
+      mainContent = renderGoatLeaderboard(activatedEntries, this.goatSearchQuery, this.goatSortBy, this.goatSubTab, this.goatManager, storage);
     } else if (this.activeTab === 'admin') {
       mainContent = renderAdminPortal(storage, this.isAdminAuthenticated);
     }
@@ -125,7 +129,6 @@ class App {
 
     this.rebindDOMEvents();
 
-    // Restore focus and cursor position after re-render!
     if (this.focusedElementId) {
       const restoredInput = document.getElementById(this.focusedElementId);
       if (restoredInput) {

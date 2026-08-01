@@ -16,12 +16,13 @@ export class GoatVoteManager {
 
   startNewTournament(roundSize = 8) {
     this.roundSize = roundSize;
-    const allEntries = [...this.storage.getEntries()];
-    if (allEntries.length < 2) {
+    // Only pick activated entries (exclude pending)
+    const activatedEntries = this.storage.getEntries().filter(e => e.weekId && e.weekId !== 'pending');
+    if (activatedEntries.length < 2) {
       return;
     }
 
-    const shuffled = allEntries.sort(() => Math.random() - 0.5);
+    const shuffled = activatedEntries.sort(() => Math.random() - 0.5);
     const selected = shuffled.slice(0, Math.min(roundSize, shuffled.length));
 
     if (selected.length % 2 !== 0) {
@@ -109,7 +110,8 @@ export class GoatVoteManager {
 }
 
 export function renderGoatLeaderboard(entries, searchQuery, sortBy, subTab, goatManager, storage) {
-  let filtered = [...entries];
+  // Hide pending unassigned entries from All-Time GOATs board!
+  let filtered = entries.filter(e => e.weekId && e.weekId !== 'pending');
 
   if (searchQuery) {
     filtered = filtered.filter(e => e.title.toLowerCase().includes(searchQuery.toLowerCase()));
