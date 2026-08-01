@@ -2,7 +2,7 @@ import { firebaseService } from './firebaseService.js';
 import { convertGoogleDriveUrl } from './gdriveHelper.js';
 import { DEFAULT_ADMIN_HASH } from './cryptoHelper.js';
 
-const LOCAL_STORAGE_KEY = 'larp_leaderboard_data_v8';
+const LOCAL_STORAGE_KEY = 'larp_leaderboard_data_v9';
 const VOTED_WEEKS_KEY = 'larp_leaderboard_voted_weeks';
 
 function purgeLegacyCaches() {
@@ -13,7 +13,8 @@ function purgeLegacyCaches() {
     'larp_leaderboard_data_v4',
     'larp_leaderboard_data_v5',
     'larp_leaderboard_data_v6',
-    'larp_leaderboard_data_v7'
+    'larp_leaderboard_data_v7',
+    'larp_leaderboard_data_v8'
   ];
   legacyKeys.forEach(key => {
     try {
@@ -73,13 +74,27 @@ export class StorageService {
     this.sanitizeImageUrls();
     this.saveToLocalStorage();
 
-    if (this.data.config && this.data.config.firebaseConfig && this.data.config.firebaseConfig.apiKey) {
+    // Connect Firebase
+    this.setupFirebaseConnection();
+
+    return this.data;
+  }
+
+  setupFirebaseConnection() {
+    if (this.data && this.data.config && this.data.config.firebaseConfig && this.data.config.firebaseConfig.apiKey) {
       const fbInitSuccess = firebaseService.init(this.data.config.firebaseConfig);
       if (fbInitSuccess) {
-        console.log('🔥 Connecting visitor to Firebase Firestore...');
+        console.log('🔥 Subscribing to Firestore entries live feed...');
         firebaseService.subscribeToEntries((remoteEntries) => {
-          if (remoteEntries && remoteEntries.length > 0) {
-            this.data.entries = remoteEntries;
+          console.log(`🔥 Received ${remoteEntries ? remoteEntries.length : 0} remote entries from Firestore.`);
+          if (Array.isArray(remoteEntries)) {
+            // If remote entries exist in Firestore, sync them to local state
+            if (remoteEntries.length > 0) {
+              this.data.entries = remoteEntries;
+            } else if (this.data.entries && this.data.entries.length > 0) {
+              // Push local entries up to Firebase if Firestore collection was brand new
+              firebaseService.syncAllEntries(this.data.entries);
+            }
             this.sanitizeImageUrls();
             this.saveToLocalStorage();
             this.notify();
@@ -87,8 +102,6 @@ export class StorageService {
         });
       }
     }
-
-    return this.data;
   }
 
   async forceSyncReload() {
@@ -179,7 +192,7 @@ export class StorageService {
     this.saveToLocalStorage();
 
     if (newConfig.firebaseConfig && newConfig.firebaseConfig.apiKey) {
-      firebaseService.init(newConfig.firebaseConfig);
+      this.setupFirebaseConnection();
       firebaseService.syncAllEntries(this.getEntries());
     }
 
@@ -213,24 +226,23 @@ export class StorageService {
     }
 
     this.saveToLocalStorage();
+    this.notify();
 
     if (firebaseService.isConfigured() && savedObject) {
       await firebaseService.saveEntry(savedObject);
     }
 
-    this.notify();
     return savedObject;
   }
 
   async deleteEntry(id) {
     this.data.entries = this.data.entries.filter(e => e.id !== id);
     this.saveToLocalStorage();
+    this.notify();
 
     if (firebaseService.isConfigured()) {
       await firebaseService.deleteEntry(id);
     }
-
-    this.notify();
   }
 
   advanceToNewWeek(newWeekTitle) {
@@ -267,6 +279,7 @@ export class StorageService {
     loser.totalVotes = (loser.totalVotes || 0) + 1;
 
     this.saveToLocalStorage();
+    this.notify();
 
     if (firebaseService.isConfigured()) {
       await firebaseService.updateEntryStats(winner.id, {
@@ -277,7 +290,6 @@ export class StorageService {
       });
     }
 
-    this.notify();
     return { winner, loser };
   }
 
