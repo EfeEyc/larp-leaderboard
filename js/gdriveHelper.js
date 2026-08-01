@@ -42,21 +42,27 @@ export function formatFileNameToTitle(fileName) {
   return cleanTitle || 'Untitled LARPer';
 }
 
+// Parse ONLY valid file IDs, strictly ignoring folder IDs
 export function parseGoogleDriveFileIds(text) {
   if (!text) return [];
-  const fileIdRegex = /\/file\/d\/([a-zA-Z0-9_-]+)|[?&]id=([a-zA-Z0-9_-]+)|\/folders\/([a-zA-Z0-9_-]+)/g;
+
+  // Extract folder ID if present to exclude it from file IDs
+  const folderMatch = text.match(/\/folders\/([a-zA-Z0-9_-]+)/);
+  const folderId = folderMatch ? folderMatch[1] : null;
+
+  const fileIdRegex = /\/file\/d\/([a-zA-Z0-9_-]+)|[?&]id=([a-zA-Z0-9_-]+)/g;
   const ids = new Set();
   let match;
   while ((match = fileIdRegex.exec(text)) !== null) {
-    const id = match[1] || match[2] || match[3];
-    if (id && id.length > 10) {
+    const id = match[1] || match[2];
+    if (id && id.length > 10 && id !== folderId) {
       ids.add(id);
     }
   }
   return Array.from(ids);
 }
 
-// Fetch all photos & filenames directly inside a Google Drive Folder URL
+// Fetch all image file IDs inside a public Google Drive Folder
 export async function fetchFilesFromGoogleDriveFolder(folderUrlOrId) {
   let folderId = folderUrlOrId.trim();
   const folderMatch = folderUrlOrId.match(/\/folders\/([a-zA-Z0-9_-]+)/);
@@ -67,45 +73,32 @@ export async function fetchFilesFromGoogleDriveFolder(folderUrlOrId) {
   const results = [];
 
   try {
-    const embedUrl = `https://drive.google.com/embeddedfolderview?id=${folderId}#grid`;
+    const embedUrl = `https://drive.google.com/embeddedfolderview?id=${folderId}#list`;
     const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(embedUrl)}`;
     const res = await fetch(proxyUrl);
     
     if (res.ok) {
       const html = await res.text();
-      const doc = new DOMParser().parseFromString(html, 'text/html');
       
-      // Select item entries in drive folder list/grid view
-      const items = doc.querySelectorAll('.drive-viewer-tile, .item-name, [data-id]');
-      items.forEach(el => {
-        const id = el.getAttribute('data-id') || el.id;
-        const textEl = el.querySelector('.drive-viewer-tile-title, .item-name') || el;
-        const name = textEl ? textEl.textContent.trim() : '';
-
-        if (id && id.length > 10 && !results.some(r => r.id === id)) {
-          results.push({
-            id,
-            name: formatFileNameToTitle(name),
-            imageUrl: `https://lh3.googleusercontent.com/d/${id}=s1600`
-          });
-        }
-      });
-
-      // Fallback regex scan for file IDs in HTML
-      if (results.length === 0) {
-        const fileRegex = /\/file\/d\/([a-zA-Z0-9_-]+)/g;
-        let match;
-        while ((match = fileRegex.exec(html)) !== null) {
-          const id = match[1];
-          if (id && id.length > 10 && !results.some(r => r.id === id)) {
-            results.push({
-              id,
-              name: `Drive LARPer #${results.length + 1}`,
-              imageUrl: `https://lh3.googleusercontent.com/d/${id}=s1600`
-            });
-          }
+      // Parse file links inside the folder HTML
+      const fileIdRegex = /\/file\/d\/([a-zA-Z0-9_-]+)/g;
+      const foundIds = new Set();
+      let match;
+      while ((match = fileIdRegex.exec(html)) !== null) {
+        const id = match[1];
+        if (id && id.length > 10 && id !== folderId) {
+          foundIds.add(id);
         }
       }
+
+      let count = 1;
+      foundIds.forEach(id => {
+        results.push({
+          id,
+          name: `Drive Photo #${count++}`,
+          imageUrl: `https://lh3.googleusercontent.com/d/${id}=s1600`
+        });
+      });
     }
   } catch (err) {
     console.warn('Failed to parse Google Drive folder via proxy:', err);

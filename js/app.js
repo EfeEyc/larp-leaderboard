@@ -9,7 +9,7 @@ import { convertGoogleDriveUrl, parseGoogleDriveFileIds, formatFileNameToTitle, 
 import { compressImageFile } from './imageHelper.js';
 import { hashPassword, DEFAULT_ADMIN_HASH } from './cryptoHelper.js';
 
-const CURRENT_VERSION = 'v5.1.0';
+const CURRENT_VERSION = 'v5.2.0';
 
 class App {
   constructor() {
@@ -333,7 +333,7 @@ class App {
 
     // Google Drive Picker Button
     document.getElementById('btn-open-gdrive-picker')?.addEventListener('click', async () => {
-      const linksPasted = prompt('☁️ Paste your Google Drive folder link or photo share link(s) below:\n\nExample: https://drive.google.com/drive/folders/1ABC...');
+      const linksPasted = prompt('☁️ Paste your Google Drive photo share link(s) or folder link below:\n\nExample: https://drive.google.com/file/d/1ABC...');
       if (linksPasted) {
         if (linksPasted.includes('/folders/')) {
           const folderFiles = await fetchFilesFromGoogleDriveFolder(linksPasted);
@@ -364,7 +364,7 @@ class App {
           alert(`✓ Successfully imported ${ids.length} Google Drive photo(s) into your pending roster!`);
           this.render();
         } else {
-          alert('Could not detect valid Google Drive file or folder IDs. Make sure folder share permission is set to "Anyone with the link can view"!');
+          alert('Could not detect photo file IDs.\n\nTo import multiple photos at once:\n1. Open your folder in Google Drive\n2. Select photos -> Right-click -> Copy links\n3. Paste the links here!');
         }
       }
     });
@@ -373,12 +373,12 @@ class App {
     document.getElementById('btn-import-batch-gdrive')?.addEventListener('click', async () => {
       const text = document.getElementById('input-batch-gdrive-links')?.value || '';
       if (!text) {
-        alert('Please paste a Google Drive folder link or share link(s)!');
+        alert('Please paste one or more Google Drive photo share links!');
         return;
       }
 
       const btn = document.getElementById('btn-import-batch-gdrive');
-      if (btn) btn.innerHTML = '⌛ Scanning Google Drive Folder...';
+      if (btn) btn.innerHTML = '⌛ Processing Google Drive Links...';
 
       if (text.includes('/folders/')) {
         const folderFiles = await fetchFilesFromGoogleDriveFolder(text);
@@ -400,7 +400,7 @@ class App {
 
       const ids = parseGoogleDriveFileIds(text);
       if (ids.length === 0) {
-        alert('Could not detect valid Google Drive file or folder IDs. Make sure your Google Drive folder permission is set to "Anyone with the link can view"!');
+        alert('Could not detect photo file IDs.\n\nTo import multiple photos at once:\n1. Open your folder in Google Drive\n2. Select all photos -> Right-click -> Copy links\n3. Paste the links here!');
         if (btn) btn.innerHTML = '⚡ IMPORT ALL GOOGLE DRIVE LINKS / FOLDERS';
         return;
       }
