@@ -198,31 +198,6 @@ class App {
       }
     });
 
-    // Lockscreen Password Change Form
-    document.getElementById('form-lockscreen-change-password')?.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const newPass = document.getElementById('input-lockscreen-new-pass').value;
-      if (newPass) {
-        const newHash = await hashPassword(newPass);
-        storage.updateConfig({ adminPasswordHash: newHash });
-        this.isAdminAuthenticated = true;
-        alert('✓ New admin password set! Admin dashboard unlocked.');
-        this.render();
-      }
-    });
-
-    // Change Password Form inside Dashboard
-    document.getElementById('form-change-password')?.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const newPass = document.getElementById('input-new-pass').value;
-      if (newPass) {
-        const newHash = await hashPassword(newPass);
-        storage.updateConfig({ adminPasswordHash: newHash });
-        alert('✓ Admin password updated successfully!');
-        this.render();
-      }
-    });
-
     // Advance Weekly Rotation Button in Admin
     document.getElementById('btn-advance-week')?.addEventListener('click', () => {
       const newTitle = prompt('Enter a title for the new weekly roster:', `Week ${Date.now()}`);
@@ -255,17 +230,39 @@ class App {
       const form = e.target;
       const title = document.getElementById('entry-title').value;
       const imageUrl = document.getElementById('entry-image-url').value;
+      const chkAddToActive = document.getElementById('chk-add-to-current-week');
+      const shouldAddToActive = chkAddToActive ? chkAddToActive.checked : true;
+
+      const activeWeekId = storage.getActiveWeekId();
+      const weekId = shouldAddToActive ? activeWeekId : null;
 
       const saved = await storage.addOrUpdateEntry({
-        title, imageUrl
+        title, imageUrl, weekId
       });
 
       if (saved) {
-        alert(`✓ Successfully uploaded "${title}"!`);
+        alert(`✓ Successfully uploaded "${title}" and added to active rotation!`);
         form.reset();
         document.getElementById('image-preview-container')?.classList.add('hidden');
         this.render();
       }
+    });
+
+    // Assign existing entry to active week
+    document.querySelectorAll('.btn-assign-current-week').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const id = e.currentTarget.dataset.entryId;
+        const activeWeekId = storage.getActiveWeekId();
+        const entry = storage.getEntryById(id);
+        if (entry) {
+          await storage.addOrUpdateEntry({
+            ...entry,
+            weekId: activeWeekId
+          });
+          alert(`✓ Added "${entry.title}" to active rotation!`);
+          this.render();
+        }
+      });
     });
 
     // Firebase Config Form
