@@ -37,11 +37,8 @@ export function convertGoogleDriveUrl(url) {
 
 export function formatFileNameToTitle(fileName) {
   if (!fileName || typeof fileName !== 'string') return 'Untitled LARPer';
-  // Strip - Google Drive suffix if present
   let clean = fileName.replace(/\s*-\s*Google Drive/i, '');
-  // Strip file extension
   clean = clean.replace(/\.[^/.]+$/, "");
-  // Replace underscores and hyphens with spaces
   clean = clean.replace(/[-_]/g, " ").replace(/\s+/g, " ").trim();
   return clean || 'Untitled LARPer';
 }
@@ -64,22 +61,46 @@ export function parseGoogleDriveFileIds(text) {
   return Array.from(ids);
 }
 
-// Automatically fetch the exact file name of a public Google Drive File ID
+// Multi-method filename extractor for Google Drive file links
 export async function fetchGoogleDriveFileName(fileId) {
-  try {
-    const viewUrl = `https://drive.google.com/file/d/${fileId}/view`;
-    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(viewUrl)}`;
-    const res = await fetch(proxyUrl);
-    if (res.ok) {
-      const html = await res.text();
-      const matchTitle = html.match(/<title>([^<]+)<\/title>/i);
-      if (matchTitle && matchTitle[1]) {
-        return formatFileNameToTitle(matchTitle[1]);
+  const proxies = [
+    url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+    url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+    url => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`
+  ];
+
+  const viewUrl = `https://drive.google.com/file/d/${fileId}/view`;
+
+  for (const getProxyUrl of proxies) {
+    try {
+      const res = await fetch(getProxyUrl(viewUrl));
+      if (res.ok) {
+        const html = await res.text();
+        
+        // Pattern 1: og:title meta tag
+        const ogTitleMatch = html.match(/<meta\s+property=["']og:title["']\s+content=["']([^"']+)["']/i);
+        if (ogTitleMatch && ogTitleMatch[1]) {
+          const clean = formatFileNameToTitle(ogTitleMatch[1]);
+          if (clean && clean !== 'Untitled LARPer' && !clean.toLowerCase().includes('google drive')) {
+            return clean;
+          }
+        }
+
+        // Pattern 2: HTML <title> tag
+        const matchTitle = html.match(/<title>([^<]+)<\/title>/i);
+        if (matchTitle && matchTitle[1]) {
+          const rawTitle = matchTitle[1];
+          if (rawTitle.includes('- Google Drive') || !rawTitle.toLowerCase().startsWith('google drive')) {
+            const clean = formatFileNameToTitle(rawTitle);
+            if (clean && clean !== 'Untitled LARPer' && !clean.toLowerCase().includes('access denied')) {
+              return clean;
+            }
+          }
+        }
       }
-    }
-  } catch (err) {
-    console.warn(`Could not fetch file name for ID ${fileId}:`, err);
+    } catch (e) {}
   }
+
   return null;
 }
 
@@ -94,7 +115,7 @@ export async function fetchFilesFromGoogleDriveFolder(folderUrlOrId) {
 
   try {
     const embedUrl = `https://drive.google.com/embeddedfolderview?id=${folderId}#list`;
-    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(embedUrl)}`;
+    const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(embedUrl)}`;
     const res = await fetch(proxyUrl);
     
     if (res.ok) {

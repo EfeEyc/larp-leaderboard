@@ -9,7 +9,7 @@ import { convertGoogleDriveUrl, parseGoogleDriveFileIds, formatFileNameToTitle, 
 import { compressImageFile } from './imageHelper.js';
 import { hashPassword, DEFAULT_ADMIN_HASH } from './cryptoHelper.js';
 
-const CURRENT_VERSION = 'v5.3.0';
+const CURRENT_VERSION = 'v5.4.0';
 
 class App {
   constructor() {
@@ -331,7 +331,7 @@ class App {
     document.getElementById('upload-tab-file')?.addEventListener('click', () => setUploadMode('file'));
     document.getElementById('upload-tab-url')?.addEventListener('click', () => setUploadMode('url'));
 
-    // Google Drive Picker Button
+    // Google Drive Quick Prompt Button
     document.getElementById('btn-open-gdrive-picker')?.addEventListener('click', async () => {
       const linksPasted = prompt('☁️ Paste your Google Drive photo share link(s) or folder link below:\n\nExample: https://drive.google.com/file/d/1ABC...');
       if (linksPasted) {
@@ -363,7 +363,7 @@ class App {
               weekId: 'pending'
             });
           }
-          alert(`✓ Successfully imported ${ids.length} Google Drive photo(s) with exact names into your pending roster!`);
+          alert(`✓ Successfully imported ${ids.length} Google Drive photo(s) into your pending roster!`);
           this.render();
         } else {
           alert('Could not detect photo file IDs.\n\nTo import multiple photos at once:\n1. Open your folder in Google Drive\n2. Select photos -> Right-click -> Copy links\n3. Paste the links here!');
@@ -380,7 +380,7 @@ class App {
       }
 
       const btn = document.getElementById('btn-import-batch-gdrive');
-      if (btn) btn.innerHTML = '⌛ Fetching Photo Names & Processing...';
+      if (btn) btn.innerHTML = '⌛ Fetching Photo Names from Google Drive...';
 
       if (text.includes('/folders/')) {
         const folderFiles = await fetchFilesFromGoogleDriveFolder(text);
@@ -422,7 +422,7 @@ class App {
         count++;
       }
 
-      alert(`✓ Successfully imported ${count} Google Drive photo(s) with exact names!`);
+      alert(`✓ Successfully imported ${count} Google Drive photo(s)!`);
       document.getElementById('input-batch-gdrive-links').value = '';
       if (btn) btn.innerHTML = '⚡ IMPORT ALL GOOGLE DRIVE LINKS / FOLDERS';
       this.render();
