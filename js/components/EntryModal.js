@@ -12,9 +12,9 @@ export function renderEntryModal(entry) {
           ✕
         </button>
 
-        <div class="w-full h-80 sm:h-96 relative overflow-hidden">
-          <img src="${entry.imageUrl}" alt="${entry.title}" class="w-full h-full object-cover" />
-          <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent"></div>
+        <div class="w-full h-80 sm:h-[450px] relative overflow-hidden bg-slate-950 flex items-center justify-center p-2">
+          <img src="${entry.imageUrl}" alt="${entry.title}" class="w-full h-full object-contain" />
+          <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-60"></div>
           
           <div class="absolute bottom-6 left-6 right-6">
             <h2 class="font-cinzel text-2xl sm:text-4xl font-extrabold text-amber-300">

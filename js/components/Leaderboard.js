@@ -12,7 +12,6 @@ export function renderLeaderboard(entries, filterCategory, searchQuery, sortBy) 
       return rateB - rateA;
     }
     if (sortBy === 'votes') return (b.totalVotes || 0) - (a.totalVotes || 0);
-    // Default sort by Wins
     return (b.wins || 0) - (a.wins || 0);
   });
 
@@ -41,8 +40,8 @@ export function renderLeaderboard(entries, filterCategory, searchQuery, sortBy) 
               🥈 2ND PLACE
             </div>
             <div class="mt-2 text-center space-y-4">
-              <div class="w-32 h-32 mx-auto rounded-2xl overflow-hidden border-2 border-slate-300 shadow-xl relative">
-                <img src="${top3[1].imageUrl}" alt="${top3[1].title}" class="w-full h-full object-cover" />
+              <div class="w-36 h-36 mx-auto rounded-2xl overflow-hidden border-2 border-slate-300 shadow-xl relative bg-slate-950 flex items-center justify-center p-1">
+                <img src="${top3[1].imageUrl}" alt="${top3[1].title}" class="w-full h-full object-contain" />
               </div>
               <div>
                 <h3 class="font-cinzel text-lg font-bold text-white">${top3[1].title}</h3>
@@ -61,8 +60,8 @@ export function renderLeaderboard(entries, filterCategory, searchQuery, sortBy) 
               👑 1ST PLACE CHAMPION
             </div>
             <div class="mt-2 text-center space-y-4">
-              <div class="w-40 h-40 mx-auto rounded-2xl overflow-hidden border-4 border-amber-400 shadow-2xl relative gold-glow">
-                <img src="${top3[0].imageUrl}" alt="${top3[0].title}" class="w-full h-full object-cover" />
+              <div class="w-44 h-44 mx-auto rounded-2xl overflow-hidden border-4 border-amber-400 shadow-2xl relative gold-glow bg-slate-950 flex items-center justify-center p-1">
+                <img src="${top3[0].imageUrl}" alt="${top3[0].title}" class="w-full h-full object-contain" />
               </div>
               <div>
                 <h3 class="font-cinzel text-xl sm:text-2xl font-black text-amber-300">${top3[0].title}</h3>
@@ -81,8 +80,8 @@ export function renderLeaderboard(entries, filterCategory, searchQuery, sortBy) 
               🥉 3RD PLACE
             </div>
             <div class="mt-2 text-center space-y-4">
-              <div class="w-32 h-32 mx-auto rounded-2xl overflow-hidden border-2 border-amber-700 shadow-xl relative">
-                <img src="${top3[2].imageUrl}" alt="${top3[2].title}" class="w-full h-full object-cover" />
+              <div class="w-36 h-36 mx-auto rounded-2xl overflow-hidden border-2 border-amber-700 shadow-xl relative bg-slate-950 flex items-center justify-center p-1">
+                <img src="${top3[2].imageUrl}" alt="${top3[2].title}" class="w-full h-full object-contain" />
               </div>
               <div>
                 <h3 class="font-cinzel text-lg font-bold text-white">${top3[2].title}</h3>
@@ -136,7 +135,6 @@ export function renderLeaderboard(entries, filterCategory, searchQuery, sortBy) 
                 class="p-4 sm:p-5 flex items-center justify-between hover:bg-slate-800/40 transition-colors cursor-pointer group" 
                 data-entry-id="${entry.id}"
               >
-                <!-- Left: Rank & Avatar & Name -->
                 <div class="flex items-center space-x-4 sm:space-x-6 min-w-0">
                   <div class="w-8 sm:w-10 text-center font-cinzel font-black text-base sm:text-xl ${
                     rank === 1 ? 'text-amber-400 text-2xl' : 
@@ -146,8 +144,8 @@ export function renderLeaderboard(entries, filterCategory, searchQuery, sortBy) 
                     #${rank}
                   </div>
 
-                  <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden border border-white/10 group-hover:border-amber-500/50 transition-colors shrink-0">
-                    <img src="${entry.imageUrl}" alt="${entry.title}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                  <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden border border-white/10 group-hover:border-amber-500/50 transition-colors shrink-0 bg-slate-950 flex items-center justify-center p-1">
+                    <img src="${entry.imageUrl}" alt="${entry.title}" class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500" />
                   </div>
 
                   <div class="min-w-0">
@@ -157,9 +155,7 @@ export function renderLeaderboard(entries, filterCategory, searchQuery, sortBy) 
                   </div>
                 </div>
 
-                <!-- Right: W/L Stats -->
                 <div class="flex items-center space-x-4 sm:space-x-8 shrink-0">
-                  <!-- Win Rate Bar -->
                   <div class="hidden md:block w-36 space-y-1">
                     <div class="flex justify-between text-xs font-mono">
                       <span class="text-slate-400">Win Rate</span>
@@ -170,7 +166,6 @@ export function renderLeaderboard(entries, filterCategory, searchQuery, sortBy) 
                     </div>
                   </div>
 
-                  <!-- Wins / Losses Pill -->
                   <div class="text-right">
                     <div class="text-sm sm:text-lg font-mono font-black text-emerald-400 bg-emerald-500/10 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl border border-emerald-500/30">
                       ${entry.wins || 0}W <span class="text-slate-500 text-xs">/</span> <span class="text-rose-400">${entry.losses || 0}L</span>

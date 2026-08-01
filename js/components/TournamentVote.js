@@ -113,7 +113,6 @@ export function renderTournamentVote(manager, storage, onGoToLeaderboard) {
   const activeWeek = storage.getActiveWeek();
   const weekEntries = storage.getActiveWeekEntries();
 
-  // If there are less than 2 entries uploaded by admin
   if (weekEntries.length < 2) {
     return `
       <div class="max-w-4xl mx-auto px-4 py-16 text-center space-y-6">
@@ -169,8 +168,8 @@ export function renderTournamentVote(manager, storage, onGoToLeaderboard) {
             🏆 YOUR WEEKLY CHAMPION PICK 🏆
           </div>
 
-          <div class="w-56 h-56 mx-auto rounded-3xl overflow-hidden border-4 border-amber-400 shadow-2xl relative mb-6">
-            <img src="${champion.imageUrl}" alt="${champion.title}" class="w-full h-full object-cover" />
+          <div class="w-64 h-64 mx-auto rounded-3xl overflow-hidden border-4 border-amber-400 shadow-2xl relative mb-6 bg-slate-950 flex items-center justify-center p-2">
+            <img src="${champion.imageUrl}" alt="${champion.title}" class="w-full h-full object-contain" />
           </div>
 
           <h2 class="font-cinzel text-3xl sm:text-5xl font-black text-amber-300 mb-6">
@@ -232,10 +231,8 @@ export function renderTournamentVote(manager, storage, onGoToLeaderboard) {
           data-loser-id="${b.id}"
         >
           <div class="space-y-4">
-            <div class="w-full h-72 sm:h-96 rounded-2xl overflow-hidden relative border border-white/10">
-              <img src="${a.imageUrl}" alt="${a.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-              <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-60"></div>
-              
+            <div class="w-full h-80 sm:h-[420px] rounded-2xl overflow-hidden relative border border-white/10 bg-slate-950 flex items-center justify-center p-2">
+              <img src="${a.imageUrl}" alt="${a.title}" class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500" />
               <div class="absolute bottom-4 left-4 bg-slate-950/80 backdrop-blur-md text-emerald-400 font-mono text-xs font-bold px-3 py-1.5 rounded-lg border border-white/10">
                 ${a.wins || 0} Wins / ${a.losses || 0} Losses
               </div>
@@ -275,10 +272,8 @@ export function renderTournamentVote(manager, storage, onGoToLeaderboard) {
           data-loser-id="${a.id}"
         >
           <div class="space-y-4">
-            <div class="w-full h-72 sm:h-96 rounded-2xl overflow-hidden relative border border-white/10">
-              <img src="${b.imageUrl}" alt="${b.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-              <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-60"></div>
-
+            <div class="w-full h-80 sm:h-[420px] rounded-2xl overflow-hidden relative border border-white/10 bg-slate-950 flex items-center justify-center p-2">
+              <img src="${b.imageUrl}" alt="${b.title}" class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500" />
               <div class="absolute bottom-4 left-4 bg-slate-950/80 backdrop-blur-md text-emerald-400 font-mono text-xs font-bold px-3 py-1.5 rounded-lg border border-white/10">
                 ${b.wins || 0} Wins / ${b.losses || 0} Losses
               </div>
