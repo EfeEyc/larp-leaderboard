@@ -1,15 +1,15 @@
-import { storage } from './storageService.js';
-import { renderHeader } from './components/Header.js';
-import { renderLeaderboard } from './components/Leaderboard.js';
-import { renderTournamentVote, TournamentVoteManager } from './components/TournamentVote.js';
-import { renderAdminPortal } from './components/AdminPortal.js';
-import { renderEntryModal } from './components/EntryModal.js';
-import { renderGoatLeaderboard, GoatVoteManager } from './components/GoatLeaderboard.js';
-import { convertGoogleDriveUrl, parseGoogleDriveFileIds, formatFileNameToTitle } from './gdriveHelper.js';
-import { compressImageFile } from './imageHelper.js';
-import { hashPassword, DEFAULT_ADMIN_HASH } from './cryptoHelper.js';
+import { storage } from './storageService.js?v=6.2.0';
+import { renderHeader } from './components/Header.js?v=6.2.0';
+import { renderLeaderboard } from './components/Leaderboard.js?v=6.2.0';
+import { renderTournamentVote, TournamentVoteManager } from './components/TournamentVote.js?v=6.2.0';
+import { renderAdminPortal } from './components/AdminPortal.js?v=6.2.0';
+import { renderEntryModal } from './components/EntryModal.js?v=6.2.0';
+import { renderGoatLeaderboard, GoatVoteManager } from './components/GoatLeaderboard.js?v=6.2.0';
+import { convertGoogleDriveUrl, parseGoogleDriveFileIds, formatFileNameToTitle } from './gdriveHelper.js?v=6.2.0';
+import { compressImageFile } from './imageHelper.js?v=6.2.0';
+import { hashPassword, DEFAULT_ADMIN_HASH } from './cryptoHelper.js?v=6.2.0';
 
-const CURRENT_VERSION = 'v6.1.0';
+const CURRENT_VERSION = 'v6.2.0';
 
 class App {
   constructor() {
