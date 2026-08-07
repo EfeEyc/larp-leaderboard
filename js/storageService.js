@@ -69,7 +69,7 @@ export class StorageService {
     if (defaultData && defaultData.config && defaultData.config.firebaseConfig && defaultData.config.firebaseConfig.apiKey) {
       this.data.config = this.data.config || {};
       this.data.config.firebaseConfig = defaultData.config.firebaseConfig;
-      if (defaultData.activeWeek) {
+      if (!this.data.activeWeek && defaultData.activeWeek) {
         this.data.activeWeek = defaultData.activeWeek;
       }
     }
@@ -97,6 +97,23 @@ export class StorageService {
             this.sanitizeImageUrls();
             this.saveToLocalStorage();
             this.notify();
+          }
+        });
+
+        console.log('🔥 Subscribing to Firestore appState live feed...');
+        firebaseService.subscribeToAppState((remoteState) => {
+          if (remoteState && remoteState.activeWeek) {
+            this.data.activeWeek = remoteState.activeWeek;
+            if (Array.isArray(remoteState.weeks)) {
+              this.data.weeks = remoteState.weeks;
+            }
+            this.saveToLocalStorage();
+            this.notify();
+          } else if (this.data && this.data.activeWeek) {
+            firebaseService.saveAppState({
+              activeWeek: this.data.activeWeek,
+              weeks: this.data.weeks || []
+            });
           }
         });
       }
@@ -298,6 +315,10 @@ export class StorageService {
     this.notify();
 
     if (firebaseService.isConfigured()) {
+      await firebaseService.saveAppState({
+        activeWeek: this.data.activeWeek,
+        weeks: this.data.weeks
+      });
       await firebaseService.syncAllEntries(this.data.entries);
     }
   }

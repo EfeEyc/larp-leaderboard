@@ -68,6 +68,38 @@ export const firebaseService = {
     }
   },
 
+  subscribeToAppState(callback) {
+    if (!db) return null;
+    try {
+      const settingsRef = doc(db, 'settings', 'appState');
+      return onSnapshot(settingsRef, (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          console.log('🔥 Received updated appState from Firestore:', data);
+          callback(data);
+        }
+      }, (error) => {
+        console.error('Firebase appState snapshot error:', error);
+      });
+    } catch (e) {
+      console.error('Error subscribing to Firebase appState:', e);
+      return null;
+    }
+  },
+
+  async saveAppState(appState) {
+    if (!db) return false;
+    try {
+      const settingsRef = doc(db, 'settings', 'appState');
+      await setDoc(settingsRef, appState, { merge: true });
+      console.log('✓ Successfully saved appState (activeWeek) to Firestore');
+      return true;
+    } catch (err) {
+      console.error('Failed to save appState in Firebase:', err);
+      return false;
+    }
+  },
+
   async syncAllEntries(entries) {
     if (!db) return;
     try {
