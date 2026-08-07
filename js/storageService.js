@@ -87,34 +87,30 @@ export class StorageService {
       const fbInitSuccess = firebaseService.init(this.data.config.firebaseConfig);
       if (fbInitSuccess) {
         console.log('🔥 Subscribing to Firestore entries live feed...');
-        firebaseService.subscribeToEntries((remoteEntries) => {
+        firebaseService.subscribeToEntries((remoteEntries, remoteAppState) => {
           if (Array.isArray(remoteEntries)) {
             if (remoteEntries.length > 0) {
               this.data.entries = remoteEntries;
             } else if (this.data.entries && this.data.entries.length > 0) {
               firebaseService.syncAllEntries(this.data.entries);
             }
-            this.sanitizeImageUrls();
-            this.saveToLocalStorage();
-            this.notify();
           }
-        });
 
-        console.log('🔥 Subscribing to Firestore appState live feed...');
-        firebaseService.subscribeToAppState((remoteState) => {
-          if (remoteState && remoteState.activeWeek) {
-            this.data.activeWeek = remoteState.activeWeek;
-            if (Array.isArray(remoteState.weeks)) {
-              this.data.weeks = remoteState.weeks;
+          if (remoteAppState && remoteAppState.activeWeek) {
+            this.data.activeWeek = remoteAppState.activeWeek;
+            if (Array.isArray(remoteAppState.weeks)) {
+              this.data.weeks = remoteAppState.weeks;
             }
-            this.saveToLocalStorage();
-            this.notify();
           } else if (this.data && this.data.activeWeek) {
             firebaseService.saveAppState({
               activeWeek: this.data.activeWeek,
               weeks: this.data.weeks || []
             });
           }
+
+          this.sanitizeImageUrls();
+          this.saveToLocalStorage();
+          this.notify();
         });
       }
     }

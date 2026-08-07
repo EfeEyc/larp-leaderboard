@@ -3,6 +3,7 @@ export class TournamentVoteManager {
     this.storage = storage;
     this.onVoteCompleted = onVoteCompleted;
     this.onTournamentFinished = onTournamentFinished;
+    this.activeWeekId = null;
     this.currentMatch = null;
     this.roundSize = 8;
     this.tournamentQueue = [];
@@ -16,6 +17,7 @@ export class TournamentVoteManager {
 
   startNewTournament(roundSize = 8) {
     this.roundSize = roundSize;
+    this.activeWeekId = this.storage.getActiveWeekId();
     const weekEntries = [...this.storage.getActiveWeekEntries()];
     if (weekEntries.length < 2) {
       return;
@@ -109,8 +111,18 @@ export class TournamentVoteManager {
 }
 
 export function renderTournamentVote(manager, storage, onGoToLeaderboard) {
-  const hasVoted = storage.hasVotedCurrentWeek();
   const activeWeek = storage.getActiveWeek();
+  const activeWeekId = activeWeek ? activeWeek.id : 'week-1';
+
+  if (manager.activeWeekId !== activeWeekId) {
+    manager.activeWeekId = activeWeekId;
+    manager.currentMatch = null;
+    manager.champion = null;
+    manager.tournamentQueue = [];
+    manager.nextRoundQueue = [];
+  }
+
+  const hasVoted = storage.hasVotedCurrentWeek();
   const weekEntries = storage.getActiveWeekEntries();
 
   if (weekEntries.length < 2) {
