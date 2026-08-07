@@ -15,20 +15,15 @@ export class TournamentVoteManager {
     this.isRevealing = false;
   }
 
-  startNewTournament(roundSize = 8) {
-    this.roundSize = roundSize;
+  startNewTournament() {
     this.activeWeekId = this.storage.getActiveWeekId();
     const weekEntries = [...this.storage.getActiveWeekEntries()];
     if (weekEntries.length < 2) {
       return;
     }
 
-    const shuffled = weekEntries.sort(() => Math.random() - 0.5);
-    const selected = shuffled.slice(0, Math.min(roundSize, shuffled.length));
-
-    if (selected.length % 2 !== 0) {
-      selected.pop();
-    }
+    // Include ALL active week LARPers in the tournament bracket
+    const selected = weekEntries.sort(() => Math.random() - 0.5);
 
     this.tournamentQueue = selected;
     this.nextRoundQueue = [];
@@ -39,10 +34,12 @@ export class TournamentVoteManager {
   }
 
   updateRoundName(remainingCount) {
-    if (remainingCount >= 16) this.currentRoundName = 'Round of 16';
+    if (remainingCount >= 32) this.currentRoundName = 'Round of 32';
+    else if (remainingCount >= 16) this.currentRoundName = 'Round of 16';
     else if (remainingCount >= 8) this.currentRoundName = 'Quarterfinals (Round of 8)';
     else if (remainingCount >= 4) this.currentRoundName = 'Semifinals (Round of 4)';
     else if (remainingCount >= 2) this.currentRoundName = '🏆 GRAND FINAL 🏆';
+    else this.currentRoundName = 'Tournament Matches';
   }
 
   nextMatch() {
@@ -166,7 +163,7 @@ export function renderTournamentVote(manager, storage, onGoToLeaderboard) {
   }
 
   if (!manager.currentMatch && !manager.champion) {
-    manager.startNewTournament(8);
+    manager.startNewTournament();
   }
 
   const match = manager.currentMatch;
