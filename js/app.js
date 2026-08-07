@@ -1,15 +1,15 @@
-import { storage } from './storageService.js?v=6.4.0';
-import { renderHeader } from './components/Header.js?v=6.4.0';
-import { renderLeaderboard } from './components/Leaderboard.js?v=6.4.0';
-import { renderTournamentVote, TournamentVoteManager } from './components/TournamentVote.js?v=6.4.0';
-import { renderAdminPortal } from './components/AdminPortal.js?v=6.4.0';
-import { renderEntryModal } from './components/EntryModal.js?v=6.4.0';
-import { renderGoatLeaderboard, GoatVoteManager } from './components/GoatLeaderboard.js?v=6.4.0';
-import { convertGoogleDriveUrl, parseGoogleDriveFileIds, formatFileNameToTitle } from './gdriveHelper.js?v=6.4.0';
-import { compressImageFile } from './imageHelper.js?v=6.4.0';
-import { hashPassword, DEFAULT_ADMIN_HASH } from './cryptoHelper.js?v=6.4.0';
+import { storage } from './storageService.js?v=6.5.0';
+import { renderHeader } from './components/Header.js?v=6.5.0';
+import { renderLeaderboard } from './components/Leaderboard.js?v=6.5.0';
+import { renderTournamentVote, TournamentVoteManager } from './components/TournamentVote.js?v=6.5.0';
+import { renderAdminPortal } from './components/AdminPortal.js?v=6.5.0';
+import { renderEntryModal } from './components/EntryModal.js?v=6.5.0';
+import { renderGoatLeaderboard, GoatVoteManager } from './components/GoatLeaderboard.js?v=6.5.0';
+import { convertGoogleDriveUrl, parseGoogleDriveFileIds, formatFileNameToTitle } from './gdriveHelper.js?v=6.5.0';
+import { compressImageFile } from './imageHelper.js?v=6.5.0';
+import { hashPassword, DEFAULT_ADMIN_HASH } from './cryptoHelper.js?v=6.5.0';
 
-const CURRENT_VERSION = 'v6.4.0';
+const CURRENT_VERSION = 'v6.5.0';
 
 class App {
   constructor() {
@@ -246,8 +246,18 @@ class App {
     }
 
     document.querySelectorAll('[data-entry-id]').forEach(card => {
-      if (card.classList.contains('battle-card') || card.closest('.battle-card')) return;
-      card.addEventListener('click', () => {
+      if (
+        card.tagName === 'SELECT' || 
+        card.tagName === 'BUTTON' || 
+        card.tagName === 'INPUT' || 
+        card.classList.contains('battle-card') || 
+        card.closest('.battle-card') ||
+        card.classList.contains('select-entry-week') ||
+        card.classList.contains('btn-delete-entry')
+      ) return;
+
+      card.addEventListener('click', (e) => {
+        if (e.target.closest('select') || e.target.closest('button') || e.target.closest('input')) return;
         const id = card.dataset.entryId;
         this.selectedEntryModal = storage.getEntryById(id);
         this.render();
@@ -509,8 +519,12 @@ class App {
 
     // Change Entry Assigned Week Dropdown Handler in Table
     document.querySelectorAll('.select-entry-week').forEach(select => {
+      select.addEventListener('click', (e) => {
+        e.stopPropagation();
+      });
       select.addEventListener('change', async (e) => {
-        const id = e.currentTarget.dataset.entryId;
+        e.stopPropagation();
+        const id = e.currentTarget.dataset.weekEntryId || e.currentTarget.dataset.entryId;
         const targetWeek = e.currentTarget.value;
         await storage.setEntryWeek(id, targetWeek);
         this.render();

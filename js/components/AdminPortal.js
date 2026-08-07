@@ -246,7 +246,7 @@ export function renderAdminPortal(storage, isAuthenticated, pendingBatchDriveIte
                       <div class="font-bold text-white font-cinzel text-sm">${e.title}</div>
                     </td>
                     <td class="py-3 px-4">
-                      <select class="select-entry-week bg-slate-950 border border-amber-500/40 text-amber-300 font-mono text-xs rounded-xl px-3 py-1.5 focus:outline-none focus:border-amber-400 cursor-pointer" data-entry-id="${e.id}">
+                      <select class="select-entry-week bg-slate-950 border border-amber-500/40 text-amber-300 font-mono text-xs rounded-xl px-3 py-1.5 focus:outline-none focus:border-amber-400 cursor-pointer" data-week-entry-id="${e.id}">
                         <option value="pending" ${!e.weekId || e.weekId === 'pending' ? 'selected' : ''}>⏳ Pending Roster</option>
                         ${weeks.map(w => `
                           <option value="${w.id}" ${e.weekId === w.id ? 'selected' : ''}>
