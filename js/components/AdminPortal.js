@@ -40,6 +40,8 @@ export function renderAdminPortal(storage, isAuthenticated, pendingBatchDriveIte
 
   const fbConfig = config.firebaseConfig || {};
 
+  const weeks = storage.data.weeks || [{ id: 'week-1', title: 'Week 1', status: 'active' }];
+
   return `
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12">
       
@@ -80,15 +82,29 @@ export function renderAdminPortal(storage, isAuthenticated, pendingBatchDriveIte
         </div>
         
         <p class="text-xs text-slate-300 leading-relaxed">
-          <strong>How Weekly Rotations Work:</strong> Upload LARPers as they come in during the week. They will accumulate in your database. When you are ready for a new week, click <strong>🚀 ACTIVATE NEW WEEKLY ROSTER</strong> to start the new week's 1v1 battle voting!
+          <strong>How Weekly Rotations Work:</strong> Upload LARPers into your database or assign them to specific weeks. When you are ready for a new week, click <strong>🚀 ACTIVATE NEW WEEKLY ROSTER</strong> to start the new week's 1v1 battle voting!
         </p>
       </div>
 
       <!-- Upload Section with Google Drive Picker & Direct Photo Upload -->
       <div class="glass-panel p-8 rounded-3xl space-y-6">
-        <h3 class="font-cinzel text-xl font-bold text-amber-300 border-b border-white/10 pb-3 flex items-center space-x-2">
-          <span>📸</span><span>UPLOAD NEW LARPERS</span>
-        </h3>
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-3">
+          <h3 class="font-cinzel text-xl font-bold text-amber-300 flex items-center space-x-2">
+            <span>📸</span><span>UPLOAD NEW LARPERS</span>
+          </h3>
+
+          <!-- Target Week Selector for Uploads -->
+          <div class="flex items-center space-x-2">
+            <label class="text-xs font-mono text-amber-400 font-bold whitespace-nowrap">Assign Uploads To:</label>
+            <select id="upload-target-week" class="bg-slate-950 border border-amber-500/40 text-amber-300 font-mono text-xs font-bold rounded-xl px-3 py-2 focus:outline-none focus:border-amber-400 cursor-pointer">
+              <option value="${activeWeekId}" selected>Current Active Week (${activeWeek.title || 'Week 1'})</option>
+              <option value="pending">⏳ Pending Roster Pool</option>
+              ${weeks.map(w => `
+                <option value="${w.id}">${w.title}${w.id === activeWeekId ? ' (Active)' : ''}</option>
+              `).join('')}
+            </select>
+          </div>
+        </div>
 
         <!-- Mode Selector: Google Drive Picker vs Direct Photo Upload vs URL -->
         <div class="flex flex-wrap gap-2 border-b border-white/10 pb-4">
@@ -216,14 +232,13 @@ export function renderAdminPortal(storage, isAuthenticated, pendingBatchDriveIte
             <thead>
               <tr class="border-b border-white/10 text-slate-400 uppercase tracking-wider">
                 <th class="py-3 px-4">LARPer</th>
-                <th class="py-3 px-4">Status</th>
+                <th class="py-3 px-4">Assigned Week</th>
                 <th class="py-3 px-4">All-Time Record (W / L)</th>
                 <th class="py-3 px-4 text-right">Actions</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-white/5">
               ${entries.map(e => {
-                const isCurrent = e.weekId === activeWeekId;
                 return `
                   <tr class="hover:bg-slate-900/50">
                     <td class="py-3 px-4 flex items-center space-x-3">
@@ -231,15 +246,14 @@ export function renderAdminPortal(storage, isAuthenticated, pendingBatchDriveIte
                       <div class="font-bold text-white font-cinzel text-sm">${e.title}</div>
                     </td>
                     <td class="py-3 px-4">
-                      ${isCurrent ? `
-                        <span class="px-2.5 py-1 bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 rounded-full text-[11px] font-bold">
-                          ✓ Active Week Roster
-                        </span>
-                      ` : `
-                        <span class="px-2.5 py-1 bg-amber-500/20 border border-amber-500/40 text-amber-300 rounded-full text-[11px] font-bold">
-                          ⏳ Pending New Week
-                        </span>
-                      `}
+                      <select class="select-entry-week bg-slate-950 border border-amber-500/40 text-amber-300 font-mono text-xs rounded-xl px-3 py-1.5 focus:outline-none focus:border-amber-400 cursor-pointer" data-entry-id="${e.id}">
+                        <option value="pending" ${!e.weekId || e.weekId === 'pending' ? 'selected' : ''}>⏳ Pending Roster</option>
+                        ${weeks.map(w => `
+                          <option value="${w.id}" ${e.weekId === w.id ? 'selected' : ''}>
+                            ${w.title}${w.id === activeWeekId ? ' (Active)' : ''}
+                          </option>
+                        `).join('')}
+                      </select>
                     </td>
                     <td class="py-3 px-4 text-emerald-400 font-bold">${e.wins || 0}W / ${e.losses || 0}L</td>
                     <td class="py-3 px-4 text-right">

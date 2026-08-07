@@ -216,7 +216,23 @@ export class StorageService {
     const activeId = this.getActiveWeekId();
     const all = this.getEntries();
     const weekEntries = all.filter(e => e.weekId === activeId);
-    return weekEntries.length >= 2 ? weekEntries : all;
+    if (weekEntries.length > 0) {
+      return weekEntries;
+    }
+    const hasAnyTagged = all.some(e => e.weekId && e.weekId !== 'pending');
+    return hasAnyTagged ? [] : all;
+  }
+
+  async setEntryWeek(entryId, targetWeekId) {
+    const entry = this.getEntryById(entryId);
+    if (!entry) return;
+    entry.weekId = targetWeekId;
+    this.saveToLocalStorage();
+    this.notify();
+
+    if (firebaseService.isConfigured()) {
+      await firebaseService.saveEntry(entry);
+    }
   }
 
   getEntryById(id) {

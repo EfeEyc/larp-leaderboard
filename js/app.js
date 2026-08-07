@@ -1,15 +1,15 @@
-import { storage } from './storageService.js?v=6.3.0';
-import { renderHeader } from './components/Header.js?v=6.3.0';
-import { renderLeaderboard } from './components/Leaderboard.js?v=6.3.0';
-import { renderTournamentVote, TournamentVoteManager } from './components/TournamentVote.js?v=6.3.0';
-import { renderAdminPortal } from './components/AdminPortal.js?v=6.3.0';
-import { renderEntryModal } from './components/EntryModal.js?v=6.3.0';
-import { renderGoatLeaderboard, GoatVoteManager } from './components/GoatLeaderboard.js?v=6.3.0';
-import { convertGoogleDriveUrl, parseGoogleDriveFileIds, formatFileNameToTitle } from './gdriveHelper.js?v=6.3.0';
-import { compressImageFile } from './imageHelper.js?v=6.3.0';
-import { hashPassword, DEFAULT_ADMIN_HASH } from './cryptoHelper.js?v=6.3.0';
+import { storage } from './storageService.js?v=6.4.0';
+import { renderHeader } from './components/Header.js?v=6.4.0';
+import { renderLeaderboard } from './components/Leaderboard.js?v=6.4.0';
+import { renderTournamentVote, TournamentVoteManager } from './components/TournamentVote.js?v=6.4.0';
+import { renderAdminPortal } from './components/AdminPortal.js?v=6.4.0';
+import { renderEntryModal } from './components/EntryModal.js?v=6.4.0';
+import { renderGoatLeaderboard, GoatVoteManager } from './components/GoatLeaderboard.js?v=6.4.0';
+import { convertGoogleDriveUrl, parseGoogleDriveFileIds, formatFileNameToTitle } from './gdriveHelper.js?v=6.4.0';
+import { compressImageFile } from './imageHelper.js?v=6.4.0';
+import { hashPassword, DEFAULT_ADMIN_HASH } from './cryptoHelper.js?v=6.4.0';
 
-const CURRENT_VERSION = 'v6.3.0';
+const CURRENT_VERSION = 'v6.4.0';
 
 class App {
   constructor() {
@@ -388,16 +388,17 @@ class App {
       if (confirmBtn) confirmBtn.innerHTML = '⌛ Saving to Roster Pool...';
 
       let count = 0;
+      const targetWeek = document.getElementById('upload-target-week')?.value || 'pending';
       for (const item of itemsToSave) {
         await storage.addOrUpdateEntry({
           title: item.title.trim() || 'Untitled LARPer',
           imageUrl: item.imageUrl,
-          weekId: 'pending'
+          weekId: targetWeek
         });
         count++;
       }
 
-      alert(`✓ Successfully saved ${count} custom-named LARPers to your pending roster pool!`);
+      alert(`✓ Successfully saved ${count} custom-named LARPers to your selected week roster!`);
       this.pendingBatchDriveItems = null;
       if (document.getElementById('input-batch-gdrive-links')) {
         document.getElementById('input-batch-gdrive-links').value = '';
@@ -450,6 +451,7 @@ class App {
       const fileInput = document.getElementById('entry-file-input');
       const titleInput = document.getElementById('entry-title-file')?.value.trim() || '';
       const files = fileInput ? Array.from(fileInput.files) : [];
+      const targetWeek = document.getElementById('upload-target-week')?.value || 'pending';
 
       if (files.length === 0) {
         alert('Please select at least one photo file!');
@@ -467,7 +469,7 @@ class App {
           await storage.addOrUpdateEntry({
             title: itemTitle,
             imageUrl: compressedDataUrl,
-            weekId: 'pending'
+            weekId: targetWeek
           });
           countSaved++;
         } catch (err) {
@@ -475,7 +477,7 @@ class App {
         }
       }
 
-      alert(`✓ Uploaded ${countSaved} photo(s) to pending roster! Names auto-set from filenames.`);
+      alert(`✓ Uploaded ${countSaved} photo(s) to selected roster! Names auto-set from filenames.`);
       fileInput.value = '';
       if (document.getElementById('entry-title-file')) document.getElementById('entry-title-file').value = '';
       document.getElementById('file-previews-container')?.classList.add('hidden');
@@ -487,21 +489,32 @@ class App {
       e.preventDefault();
       const titleInput = document.getElementById('entry-title-url').value.trim();
       const imageUrl = document.getElementById('entry-image-url').value.trim();
+      const targetWeek = document.getElementById('upload-target-week')?.value || 'pending';
 
       if (!imageUrl) return;
 
       const saved = await storage.addOrUpdateEntry({
         title: titleInput || 'Untitled LARPer',
         imageUrl: convertGoogleDriveUrl(imageUrl),
-        weekId: 'pending'
+        weekId: targetWeek
       });
 
       if (saved) {
-        alert(`✓ Uploaded "${titleInput || 'LARPer'}" to pending roster!`);
+        alert(`✓ Uploaded "${titleInput || 'LARPer'}" to selected roster!`);
         document.getElementById('form-entry-add-url').reset();
         document.getElementById('image-preview-container')?.classList.add('hidden');
         this.render();
       }
+    });
+
+    // Change Entry Assigned Week Dropdown Handler in Table
+    document.querySelectorAll('.select-entry-week').forEach(select => {
+      select.addEventListener('change', async (e) => {
+        const id = e.currentTarget.dataset.entryId;
+        const targetWeek = e.currentTarget.value;
+        await storage.setEntryWeek(id, targetWeek);
+        this.render();
+      });
     });
 
     // Activate Weekly Roster Button in Admin
