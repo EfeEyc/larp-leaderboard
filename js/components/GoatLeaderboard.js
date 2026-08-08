@@ -18,8 +18,7 @@ export class GoatVoteManager {
     return e && e.weekId && e.weekId !== 'pending' && e.weekId !== 'unassigned';
   }
 
-  startNewTournament(roundSize = 8) {
-    this.roundSize = roundSize;
+  startNewTournament() {
     // Strict filter: exclude ALL pending or unassigned entries
     const activatedEntries = this.storage.getEntries().filter(e => this.isActivatedEntry(e));
     
@@ -29,12 +28,8 @@ export class GoatVoteManager {
       return;
     }
 
-    const shuffled = activatedEntries.sort(() => Math.random() - 0.5);
-    const selected = shuffled.slice(0, Math.min(roundSize, shuffled.length));
-
-    if (selected.length % 2 !== 0) {
-      selected.pop();
-    }
+    // Include ALL activated entries in the All-Time GOAT tournament
+    const selected = activatedEntries.sort(() => Math.random() - 0.5);
 
     this.tournamentQueue = selected;
     this.nextRoundQueue = [];
@@ -45,10 +40,13 @@ export class GoatVoteManager {
   }
 
   updateRoundName(remainingCount) {
-    if (remainingCount >= 16) this.currentRoundName = 'Round of 16';
+    if (remainingCount >= 64) this.currentRoundName = 'Round of 64';
+    else if (remainingCount >= 32) this.currentRoundName = 'Round of 32';
+    else if (remainingCount >= 16) this.currentRoundName = 'Round of 16';
     else if (remainingCount >= 8) this.currentRoundName = 'Quarterfinals (Round of 8)';
     else if (remainingCount >= 4) this.currentRoundName = 'Semifinals (Round of 4)';
     else if (remainingCount >= 2) this.currentRoundName = '🏆 ALL-TIME GRAND FINAL 🏆';
+    else this.currentRoundName = 'GOAT Tournament Matches';
   }
 
   nextMatch() {
@@ -365,7 +363,7 @@ function renderGoatBattleView(manager, storage) {
   }
 
   if (!manager.currentMatch && !manager.champion) {
-    manager.startNewTournament(8);
+    manager.startNewTournament();
   }
 
   const match = manager.currentMatch;
