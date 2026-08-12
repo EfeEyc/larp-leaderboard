@@ -8,7 +8,7 @@ export function renderAdminPortal(storage, isAuthenticated, pendingBatchDriveIte
   const activeWeekId = activeWeek.id || 'week-1';
 
   const activeEntries = entries.filter(e => e.weekId === activeWeekId);
-  const pendingEntries = entries.filter(e => !e.weekId || e.weekId === 'pending' || e.weekId !== activeWeekId);
+  const pendingEntries = entries.filter(e => !e.weekId || e.weekId === 'pending');
 
   if (!isAuthenticated) {
     return `
