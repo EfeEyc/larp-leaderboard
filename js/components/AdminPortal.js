@@ -97,10 +97,10 @@ export function renderAdminPortal(storage, isAuthenticated, pendingBatchDriveIte
           <div class="flex items-center space-x-2">
             <label class="text-xs font-mono text-amber-400 font-bold whitespace-nowrap">Assign Uploads To:</label>
             <select id="upload-target-week" class="bg-slate-950 border border-amber-500/40 text-amber-300 font-mono text-xs font-bold rounded-xl px-3 py-2 focus:outline-none focus:border-amber-400 cursor-pointer">
-              <option value="${activeWeekId}" selected>Current Active Week (${activeWeek.title || 'Week 1'})</option>
-              <option value="pending">⏳ Pending Roster Pool</option>
-              ${weeks.map(w => `
-                <option value="${w.id}">${w.title}${w.id === activeWeekId ? ' (Active)' : ''}</option>
+              <option value="pending" selected>⏳ Pending Roster Pool (Default)</option>
+              <option value="${activeWeekId}">Current Active Week (${activeWeek.title || 'Week 1'})</option>
+              ${weeks.filter(w => w.id !== activeWeekId).map(w => `
+                <option value="${w.id}">${w.title}</option>
               `).join('')}
             </select>
           </div>
