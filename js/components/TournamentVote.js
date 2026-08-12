@@ -8,7 +8,7 @@ export class TournamentVoteManager {
     this.roundSize = 8;
     this.tournamentQueue = [];
     this.nextRoundQueue = [];
-    this.currentRoundName = 'Quarterfinals';
+    this.currentRoundName = 'Tournament Matches';
     this.roundNumber = 1;
     this.lastMatchResult = null;
     this.champion = null;
@@ -34,11 +34,12 @@ export class TournamentVoteManager {
   }
 
   updateRoundName(remainingCount) {
-    if (remainingCount >= 32) this.currentRoundName = 'Round of 32';
-    else if (remainingCount >= 16) this.currentRoundName = 'Round of 16';
-    else if (remainingCount >= 8) this.currentRoundName = 'Quarterfinals (Round of 8)';
-    else if (remainingCount >= 4) this.currentRoundName = 'Semifinals (Round of 4)';
-    else if (remainingCount >= 2) this.currentRoundName = '🏆 GRAND FINAL 🏆';
+    if (remainingCount > 32) this.currentRoundName = 'Round of 64';
+    else if (remainingCount > 16) this.currentRoundName = 'Round of 32';
+    else if (remainingCount > 8) this.currentRoundName = 'Round of 16';
+    else if (remainingCount > 4) this.currentRoundName = 'Quarterfinals (Round of 8)';
+    else if (remainingCount > 2) this.currentRoundName = 'Semifinals (Round of 4)';
+    else if (remainingCount === 2) this.currentRoundName = '🏆 GRAND FINAL 🏆';
     else this.currentRoundName = 'Tournament Matches';
   }
 

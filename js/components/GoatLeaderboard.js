@@ -7,7 +7,7 @@ export class GoatVoteManager {
     this.roundSize = 8;
     this.tournamentQueue = [];
     this.nextRoundQueue = [];
-    this.currentRoundName = 'Quarterfinals';
+    this.currentRoundName = 'Tournament Matches';
     this.roundNumber = 1;
     this.lastMatchResult = null;
     this.champion = null;
@@ -40,12 +40,12 @@ export class GoatVoteManager {
   }
 
   updateRoundName(remainingCount) {
-    if (remainingCount >= 64) this.currentRoundName = 'Round of 64';
-    else if (remainingCount >= 32) this.currentRoundName = 'Round of 32';
-    else if (remainingCount >= 16) this.currentRoundName = 'Round of 16';
-    else if (remainingCount >= 8) this.currentRoundName = 'Quarterfinals (Round of 8)';
-    else if (remainingCount >= 4) this.currentRoundName = 'Semifinals (Round of 4)';
-    else if (remainingCount >= 2) this.currentRoundName = '🏆 ALL-TIME GRAND FINAL 🏆';
+    if (remainingCount > 32) this.currentRoundName = 'Round of 64';
+    else if (remainingCount > 16) this.currentRoundName = 'Round of 32';
+    else if (remainingCount > 8) this.currentRoundName = 'Round of 16';
+    else if (remainingCount > 4) this.currentRoundName = 'Quarterfinals (Round of 8)';
+    else if (remainingCount > 2) this.currentRoundName = 'Semifinals (Round of 4)';
+    else if (remainingCount === 2) this.currentRoundName = '🏆 ALL-TIME GRAND FINAL 🏆';
     else this.currentRoundName = 'GOAT Tournament Matches';
   }
 
@@ -421,7 +421,7 @@ function renderGoatBattleView(manager, storage) {
       
       <div class="glass-panel p-6 rounded-3xl border border-amber-500/40 text-center space-y-1">
         <span class="text-xs font-mono text-amber-400 uppercase tracking-widest font-bold">
-          ${manager.currentRoundName || 'Quarterfinals'}
+          ${manager.currentRoundName || 'Tournament Matches'}
         </span>
         <h2 class="font-cinzel text-2xl sm:text-4xl font-extrabold text-white">
           MONTHLY GOAT 1v1 TOURNAMENT
