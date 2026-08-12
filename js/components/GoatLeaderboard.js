@@ -446,9 +446,6 @@ function renderGoatBattleView(manager, storage) {
           <div class="space-y-4">
             <div class="w-full h-80 sm:h-[420px] rounded-2xl overflow-hidden relative border border-white/10 bg-slate-950 flex items-center justify-center p-2">
               <img src="${a.imageUrl}" alt="${a.title}" class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500" />
-              <div class="absolute bottom-4 left-4 bg-slate-950/80 backdrop-blur-md text-emerald-400 font-mono text-xs font-bold px-3 py-1.5 rounded-lg border border-white/10">
-                ${a.wins || 0} Wins / ${a.losses || 0} Losses
-              </div>
             </div>
 
             <div class="text-center py-2">
@@ -487,9 +484,6 @@ function renderGoatBattleView(manager, storage) {
           <div class="space-y-4">
             <div class="w-full h-80 sm:h-[420px] rounded-2xl overflow-hidden relative border border-white/10 bg-slate-950 flex items-center justify-center p-2">
               <img src="${b.imageUrl}" alt="${b.title}" class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500" />
-              <div class="absolute bottom-4 left-4 bg-slate-950/80 backdrop-blur-md text-emerald-400 font-mono text-xs font-bold px-3 py-1.5 rounded-lg border border-white/10">
-                ${b.wins || 0} Wins / ${b.losses || 0} Losses
-              </div>
             </div>
 
             <div class="text-center py-2">
