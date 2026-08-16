@@ -25,9 +25,10 @@ export function renderEntryModal(entry) {
         </div>
 
         <div class="p-6 sm:p-8">
-          <div class="text-center bg-slate-950/80 p-5 rounded-2xl border border-amber-500/40 font-mono space-y-1">
-            <div class="text-amber-400 font-extrabold text-2xl">${elo} LARP Rating</div>
-            <div class="text-xs text-slate-400 font-mono">${entry.wins || 0} Wins / ${entry.losses || 0} Losses</div>
+          <div class="text-center bg-slate-950/80 p-5 rounded-2xl border border-amber-500/40 font-mono space-y-0.5">
+            <div class="text-amber-300 font-black text-3xl">${elo}</div>
+            <div class="text-[11px] font-semibold uppercase tracking-wider text-amber-400/80">LARP Rating</div>
+            <div class="text-xs text-slate-400 font-mono pt-1">${entry.wins || 0} Wins / ${entry.losses || 0} Losses</div>
           </div>
         </div>
 

@@ -196,9 +196,10 @@ function renderGoatRankingsView(filtered, top3, searchQuery) {
             <div>
               <h3 class="font-cinzel text-xl sm:text-2xl font-black text-amber-300">${top3[0].title}</h3>
             </div>
-            <div class="text-center bg-slate-950/80 p-3 rounded-2xl border border-amber-500/40 font-mono space-y-1">
-              <div class="text-amber-400 font-extrabold text-base sm:text-lg">${calculateElo(top3[0].wins, top3[0].losses)} LARP Rating</div>
-              <div class="text-[11px] text-slate-400 font-mono">${top3[0].wins || 0}W / ${top3[0].losses || 0}L</div>
+            <div class="text-center bg-slate-950/80 p-3.5 rounded-2xl border border-amber-500/40 font-mono space-y-0.5">
+              <div class="text-amber-300 font-black text-2xl">${calculateElo(top3[0].wins, top3[0].losses)}</div>
+              <div class="text-[10px] font-semibold uppercase tracking-wider text-amber-400/80">LARP Rating</div>
+              <div class="text-[11px] text-slate-400 pt-0.5">${top3[0].wins || 0}W / ${top3[0].losses || 0}L</div>
             </div>
           </div>
         </div>
@@ -216,8 +217,9 @@ function renderGoatRankingsView(filtered, top3, searchQuery) {
               <h3 class="font-cinzel text-lg font-bold text-white">${top3[1].title}</h3>
             </div>
             <div class="text-center bg-slate-950/60 p-2.5 rounded-xl border border-white/10 font-mono space-y-0.5">
-              <div class="text-slate-200 font-bold text-sm">${calculateElo(top3[1].wins, top3[1].losses)} LARP Rating</div>
-              <div class="text-[10px] text-slate-400 font-mono">${top3[1].wins || 0}W / ${top3[1].losses || 0}L</div>
+              <div class="text-slate-200 font-extrabold text-xl">${calculateElo(top3[1].wins, top3[1].losses)}</div>
+              <div class="text-[9px] font-semibold uppercase tracking-wider text-slate-400">LARP Rating</div>
+              <div class="text-[10px] text-slate-400">${top3[1].wins || 0}W / ${top3[1].losses || 0}L</div>
             </div>
           </div>
         </div>
@@ -235,8 +237,9 @@ function renderGoatRankingsView(filtered, top3, searchQuery) {
               <h3 class="font-cinzel text-lg font-bold text-white">${top3[2].title}</h3>
             </div>
             <div class="text-center bg-slate-950/60 p-2.5 rounded-xl border border-white/10 font-mono space-y-0.5">
-              <div class="text-amber-500 font-bold text-sm">${calculateElo(top3[2].wins, top3[2].losses)} LARP Rating</div>
-              <div class="text-[10px] text-slate-400 font-mono">${top3[2].wins || 0}W / ${top3[2].losses || 0}L</div>
+              <div class="text-amber-500 font-extrabold text-xl">${calculateElo(top3[2].wins, top3[2].losses)}</div>
+              <div class="text-[9px] font-semibold uppercase tracking-wider text-amber-500/80">LARP Rating</div>
+              <div class="text-[10px] text-slate-400">${top3[2].wins || 0}W / ${top3[2].losses || 0}L</div>
             </div>
           </div>
         </div>
@@ -295,8 +298,9 @@ function renderGoatRankingsView(filtered, top3, searchQuery) {
               </div>
 
               <div class="text-right shrink-0">
-                <div class="text-sm sm:text-base font-mono font-black text-amber-300 bg-amber-500/10 px-3.5 py-1.5 rounded-xl border border-amber-500/30 inline-block">
-                  ${elo} LARP Rating
+                <div class="inline-flex items-baseline space-x-1.5 bg-amber-500/10 px-3.5 py-1.5 rounded-xl border border-amber-500/30">
+                  <span class="text-base sm:text-lg font-mono font-black text-amber-300">${elo}</span>
+                  <span class="text-[10px] font-mono font-semibold uppercase text-amber-400/80 tracking-wider">LARP Rating</span>
                 </div>
                 <div class="text-[11px] font-mono text-slate-400 mt-1">
                   ${entry.wins || 0}W / ${entry.losses || 0}L
@@ -358,9 +362,10 @@ function renderGoatBattleView(manager, storage) {
             ${champion.title}
           </h2>
 
-          <div class="text-center max-w-xs mx-auto bg-slate-950/80 p-4 rounded-2xl border border-amber-500/40 font-mono space-y-1 mb-8">
-            <div class="text-amber-400 font-extrabold text-xl">${calculateElo(champion.wins, champion.losses)} LARP Rating</div>
-            <div class="text-xs text-slate-400">${champion.wins || 0} Wins / ${champion.losses || 0} Losses</div>
+          <div class="text-center max-w-xs mx-auto bg-slate-950/80 p-4 rounded-2xl border border-amber-500/40 font-mono space-y-0.5 mb-8">
+            <div class="text-amber-300 font-black text-2xl">${calculateElo(champion.wins, champion.losses)}</div>
+            <div class="text-[10px] font-semibold uppercase tracking-wider text-amber-400/80">LARP Rating</div>
+            <div class="text-xs text-slate-400 pt-1">${champion.wins || 0} Wins / ${champion.losses || 0} Losses</div>
           </div>
         </div>
       </div>
