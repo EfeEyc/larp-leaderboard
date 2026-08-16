@@ -189,7 +189,7 @@ export function renderTournamentVote(manager, storage, onGoToLeaderboard) {
           </h2>
 
           <div class="text-center max-w-xs mx-auto bg-slate-950/80 p-4 rounded-2xl border border-amber-500/40 font-mono space-y-1 mb-8">
-            <div class="text-amber-400 font-extrabold text-xl">🎭 ${calculateElo(champion.wins, champion.losses)} LARP Rating</div>
+            <div class="text-amber-400 font-extrabold text-xl">${calculateElo(champion.wins, champion.losses)} LARP Rating</div>
             <div class="text-xs text-slate-400">${champion.wins || 0} Wins / ${champion.losses || 0} Losses</div>
           </div>
 

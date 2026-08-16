@@ -257,7 +257,7 @@ export function renderAdminPortal(storage, isAuthenticated, pendingBatchDriveIte
                       </select>
                     </td>
                     <td class="py-3 px-4 font-mono">
-                      <span class="text-amber-300 font-bold">🎭 ${calculateElo(e.wins, e.losses)}</span>
+                      <span class="text-amber-300 font-bold">${calculateElo(e.wins, e.losses)}</span>
                       <span class="text-[10px] text-slate-500 ml-1">(${e.wins || 0}W / ${e.losses || 0}L)</span>
                     </td>
                     <td class="py-3 px-4 text-right">
