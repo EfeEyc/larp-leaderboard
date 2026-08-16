@@ -1,15 +1,15 @@
-import { storage } from './storageService.js?v=8.3.0';
-import { renderHeader } from './components/Header.js?v=8.3.0';
-import { renderLeaderboard } from './components/Leaderboard.js?v=8.3.0';
-import { renderTournamentVote, TournamentVoteManager } from './components/TournamentVote.js?v=8.3.0';
-import { renderAdminPortal } from './components/AdminPortal.js?v=8.3.0';
-import { renderEntryModal } from './components/EntryModal.js?v=8.3.0';
-import { renderGoatLeaderboard, GoatVoteManager } from './components/GoatLeaderboard.js?v=8.3.0';
-import { convertGoogleDriveUrl, parseGoogleDriveFileIds, formatFileNameToTitle } from './gdriveHelper.js?v=8.3.0';
-import { compressImageFile } from './imageHelper.js?v=8.3.0';
-import { hashPassword, DEFAULT_ADMIN_HASH } from './cryptoHelper.js?v=8.3.0';
+import { storage } from './storageService.js?v=8.4.0';
+import { renderHeader } from './components/Header.js?v=8.4.0';
+import { renderLeaderboard } from './components/Leaderboard.js?v=8.4.0';
+import { renderTournamentVote, TournamentVoteManager } from './components/TournamentVote.js?v=8.4.0';
+import { renderAdminPortal } from './components/AdminPortal.js?v=8.4.0';
+import { renderEntryModal } from './components/EntryModal.js?v=8.4.0';
+import { renderGoatLeaderboard, GoatVoteManager } from './components/GoatLeaderboard.js?v=8.4.0';
+import { convertGoogleDriveUrl, parseGoogleDriveFileIds, formatFileNameToTitle } from './gdriveHelper.js?v=8.4.0';
+import { compressImageFile } from './imageHelper.js?v=8.4.0';
+import { hashPassword, DEFAULT_ADMIN_HASH } from './cryptoHelper.js?v=8.4.0';
 
-const CURRENT_VERSION = 'v8.3.0';
+const CURRENT_VERSION = 'v8.4.0';
 
 class App {
   constructor() {
@@ -110,7 +110,7 @@ class App {
 
     if (this.activeTab === 'leaderboard') {
       const weeklyActiveEntries = entries.filter(e => e.weekId === activeWeekId);
-      mainContent = renderLeaderboard(weeklyActiveEntries, this.filterCategory, this.searchQuery, this.sortBy);
+      mainContent = renderLeaderboard(weeklyActiveEntries, this.filterCategory, this.searchQuery, storage);
     } else if (this.activeTab === 'tournament') {
       mainContent = renderTournamentVote(this.tourneyManager, storage, () => this.setTab('leaderboard'));
     } else if (this.activeTab === 'goats') {
@@ -174,6 +174,17 @@ class App {
 
     document.getElementById('btn-goto-leaderboard')?.addEventListener('click', () => this.setTab('leaderboard'));
     document.getElementById('btn-goto-leaderboard-from-voted')?.addEventListener('click', () => this.setTab('leaderboard'));
+
+    document.getElementById('btn-start-weekly-vote-now')?.addEventListener('click', () => {
+      this.activeTab = 'tournament';
+      this.render();
+    });
+
+    document.getElementById('btn-start-goat-vote-now')?.addEventListener('click', () => {
+      this.activeTab = 'goats';
+      this.goatSubTab = 'battle';
+      this.render();
+    });
 
     // GOAT Sub-Tab Switches
     document.getElementById('goat-tab-rankings')?.addEventListener('click', () => {

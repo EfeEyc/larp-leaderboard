@@ -122,6 +122,7 @@ export class GoatVoteManager {
 }
 
 export function renderGoatLeaderboard(entries, searchQuery, sortBy, subTab, goatManager, storage) {
+  const hasVotedMonth = storage ? storage.hasVotedCurrentMonth() : false;
   let filtered = entries.filter(e => e && e.weekId && e.weekId !== 'pending' && e.weekId !== 'unassigned');
 
   if (searchQuery) {
@@ -139,8 +140,33 @@ export function renderGoatLeaderboard(entries, searchQuery, sortBy, subTab, goat
   return `
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10">
       
+      <!-- Prominent Monthly GOAT Voting Banner IF Voting Available -->
+      ${!hasVotedMonth && filtered.length >= 2 ? `
+        <div class="glass-panel p-6 sm:p-8 rounded-3xl border-2 border-amber-500/60 shadow-2xl text-center space-y-4 relative overflow-hidden gold-glow">
+          <div class="inline-block px-4 py-1.5 bg-gradient-to-r from-amber-500 to-yellow-300 text-slate-950 font-black text-xs font-mono uppercase tracking-widest rounded-full shadow-md">
+            👑 MONTHLY GOAT TOURNAMENT VOTE OPEN
+          </div>
+          <h3 class="font-cinzel text-2xl sm:text-4xl font-extrabold text-white">
+            VOTE IN THE MONTHLY GOAT TOURNAMENT BRACKET!
+          </h3>
+          <p class="text-xs sm:text-sm text-slate-300 max-w-lg mx-auto">
+            Match up LARPers from all weeks in 1v1 battles to choose the Monthly GOAT Champion!
+          </p>
+          <div>
+            <button id="btn-start-goat-vote-now" class="px-8 py-4 bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-300 text-slate-950 font-black font-cinzel text-base sm:text-lg rounded-2xl shadow-xl shadow-amber-500/30 hover:scale-105 transition-transform">
+              👑 START MONTHLY GOAT VOTE NOW
+            </button>
+          </div>
+        </div>
+      ` : hasVotedMonth ? `
+        <div class="glass-panel p-4 rounded-2xl border border-amber-500/30 text-center flex items-center justify-center space-x-3 text-xs sm:text-sm font-mono text-amber-400">
+          <span>👑</span>
+          <span>You have completed your Monthly GOAT Tournament vote for this month!</span>
+        </div>
+      ` : ''}
+
       <!-- GOAT Hero Banner -->
-      <div class="text-center space-y-3 relative py-4">
+      <div class="text-center space-y-3 relative py-2">
         <div class="inline-block px-4 py-1.5 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 text-slate-950 font-black text-xs font-mono uppercase tracking-widest rounded-full shadow-lg shadow-amber-500/20 mb-2">
           👑 THE ALL-TIME HALL OF FAME
         </div>

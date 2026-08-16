@@ -1,6 +1,10 @@
 import { calculateElo } from '../eloHelper.js';
 
-export function renderLeaderboard(entries, filterCategory, searchQuery) {
+export function renderLeaderboard(entries, filterCategory, searchQuery, storage) {
+  const hasVotedWeek = storage ? storage.hasVotedCurrentWeek() : false;
+  const activeWeek = storage ? storage.getActiveWeek() : null;
+  const activeWeekEntries = storage ? storage.getActiveWeekEntries() : [];
+
   let filtered = entries.filter(e => {
     const matchesSearch = !searchQuery || 
       e.title.toLowerCase().includes(searchQuery.toLowerCase());
@@ -18,8 +22,33 @@ export function renderLeaderboard(entries, filterCategory, searchQuery) {
   return `
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10">
       
+      <!-- Prominent Weekly Voting Banner IF Voting Available -->
+      ${!hasVotedWeek && activeWeekEntries.length >= 2 ? `
+        <div class="glass-panel p-6 sm:p-8 rounded-3xl border-2 border-amber-500/60 shadow-2xl text-center space-y-4 relative overflow-hidden gold-glow">
+          <div class="inline-block px-4 py-1.5 bg-gradient-to-r from-amber-500 to-yellow-300 text-slate-950 font-black text-xs font-mono uppercase tracking-widest rounded-full shadow-md">
+            ⚔️ WEEKLY VOTING OPEN
+          </div>
+          <h3 class="font-cinzel text-2xl sm:text-4xl font-extrabold text-white">
+            YOUR VOTE IS WAITING FOR ${activeWeek ? activeWeek.title.toUpperCase() : 'THIS WEEK'}!
+          </h3>
+          <p class="text-xs sm:text-sm text-slate-300 max-w-lg mx-auto">
+            Choose between 1v1 matchups to decide this week's LARP Ratings & Hall of Champions!
+          </p>
+          <div>
+            <button id="btn-start-weekly-vote-now" class="px-8 py-4 bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-300 text-slate-950 font-black font-cinzel text-base sm:text-lg rounded-2xl shadow-xl shadow-amber-500/30 hover:scale-105 transition-transform">
+              ⚔️ START WEEKLY TOURNAMENT VOTE NOW
+            </button>
+          </div>
+        </div>
+      ` : hasVotedWeek ? `
+        <div class="glass-panel p-4 rounded-2xl border border-emerald-500/30 text-center flex items-center justify-center space-x-3 text-xs sm:text-sm font-mono text-emerald-400">
+          <span>✅</span>
+          <span>You have completed your vote for <strong>${activeWeek ? activeWeek.title : 'this week'}</strong>! Standings updated live below.</span>
+        </div>
+      ` : ''}
+
       <!-- Hero Banner -->
-      <div class="text-center space-y-3 relative py-4">
+      <div class="text-center space-y-3 relative py-2">
         <h2 class="font-cinzel text-3xl sm:text-5xl font-extrabold text-gradient-gold tracking-wide">
           HALL OF CHAMPIONS
         </h2>
