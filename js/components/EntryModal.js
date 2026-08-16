@@ -1,8 +1,9 @@
+import { calculateElo } from '../eloHelper.js';
+
 export function renderEntryModal(entry) {
   if (!entry) return '';
 
-  const total = entry.totalVotes || 1;
-  const winRate = Math.round(((entry.wins || 0) / total) * 100);
+  const elo = calculateElo(entry.wins, entry.losses);
 
   return `
     <div id="entry-modal-backdrop" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 overflow-y-auto animate-fade-in">
@@ -23,20 +24,9 @@ export function renderEntryModal(entry) {
           </div>
         </div>
 
-        <div class="p-6 sm:p-8 space-y-6">
-          <div class="grid grid-cols-3 gap-4 bg-slate-950/80 p-4 rounded-2xl border border-white/10 text-center font-mono">
-            <div>
-              <span class="text-[10px] text-slate-400 block uppercase">WINS</span>
-              <strong class="text-emerald-400 text-xl font-bold">${entry.wins || 0}</strong>
-            </div>
-            <div>
-              <span class="text-[10px] text-slate-400 block uppercase">LOSSES</span>
-              <strong class="text-rose-400 text-xl font-bold">${entry.losses || 0}</strong>
-            </div>
-            <div>
-              <span class="text-[10px] text-slate-400 block uppercase">WIN RATE</span>
-              <strong class="text-amber-400 text-xl font-bold">${winRate}%</strong>
-            </div>
+        <div class="p-6 sm:p-8">
+          <div class="flex justify-center items-center bg-slate-950/80 p-4 rounded-2xl border border-amber-500/40 text-center font-mono">
+            <span class="text-amber-400 font-extrabold text-2xl">⚡ ${elo} ELO</span>
           </div>
         </div>
 

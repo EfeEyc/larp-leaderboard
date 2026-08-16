@@ -1,3 +1,5 @@
+import { calculateElo } from '../eloHelper.js';
+
 export class TournamentVoteManager {
   constructor(storage, onVoteCompleted, onTournamentFinished) {
     this.storage = storage;
@@ -186,16 +188,8 @@ export function renderTournamentVote(manager, storage, onGoToLeaderboard) {
             ${champion.title}
           </h2>
 
-          <div class="flex justify-center space-x-6 max-w-xs mx-auto bg-slate-950/80 p-4 rounded-2xl border border-white/10 font-mono text-sm mb-8">
-            <div>
-              <span class="text-xs text-slate-400 block uppercase">TOTAL WINS</span>
-              <strong class="text-emerald-400 text-xl font-bold">${champion.wins || 0}</strong>
-            </div>
-            <div class="w-px bg-white/10"></div>
-            <div>
-              <span class="text-xs text-slate-400 block uppercase">LOSSES</span>
-              <strong class="text-rose-400 text-xl font-bold">${champion.losses || 0}</strong>
-            </div>
+          <div class="flex justify-center items-center max-w-xs mx-auto bg-slate-950/80 p-4 rounded-2xl border border-amber-500/40 font-mono text-sm mb-8">
+            <span class="text-amber-400 font-extrabold text-xl">⚡ ${calculateElo(champion.wins, champion.losses)} ELO</span>
           </div>
 
           <button id="btn-goto-leaderboard" class="px-8 py-4 bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-300 text-slate-950 font-black font-cinzel text-lg rounded-2xl shadow-xl shadow-amber-500/30 hover:scale-105 transition-transform">

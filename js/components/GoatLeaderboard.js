@@ -1,3 +1,5 @@
+import { calculateElo } from '../eloHelper.js';
+
 export class GoatVoteManager {
   constructor(storage, onVoteCompleted, onTournamentFinished) {
     this.storage = storage;
@@ -90,7 +92,7 @@ export class GoatVoteManager {
       this.updateRoundName(this.tournamentQueue.length);
       this.nextMatch();
     } else {
-      this.startNewTournament(this.roundSize);
+      this.startNewTournament();
     }
   }
 
@@ -131,13 +133,9 @@ export function renderGoatLeaderboard(entries, searchQuery, sortBy, subTab, goat
   }
 
   filtered.sort((a, b) => {
-    if (sortBy === 'winrate') {
-      const rateA = a.totalVotes ? (a.wins / a.totalVotes) : 0;
-      const rateB = b.totalVotes ? (b.wins / b.totalVotes) : 0;
-      return rateB - rateA;
-    }
-    if (sortBy === 'votes') return (b.totalVotes || 0) - (a.totalVotes || 0);
-    return (b.wins || 0) - (a.wins || 0);
+    const eloA = calculateElo(a.wins, a.losses);
+    const eloB = calculateElo(b.wins, b.losses);
+    return eloB - eloA;
   });
 
   const top3 = filtered.slice(0, 3);
@@ -154,7 +152,7 @@ export function renderGoatLeaderboard(entries, searchQuery, sortBy, subTab, goat
           ALL-TIME GOATs
         </h2>
         <p class="text-slate-400 max-w-xl mx-auto text-sm sm:text-base font-light">
-          Master rankings & tournament bracket for all LARPers uploaded across all weeks.
+          Master Elo rankings & tournament bracket for all LARPers uploaded across all weeks.
         </p>
       </div>
 
@@ -166,7 +164,7 @@ export function renderGoatLeaderboard(entries, searchQuery, sortBy, subTab, goat
               ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/30' 
               : 'text-gray-400 hover:text-white'
           }">
-            🏆 ALL-TIME RANKINGS
+            🏆 ALL-TIME ELO RANKINGS
           </button>
           <button id="goat-tab-battle" class="px-6 py-2.5 rounded-xl font-cinzel text-xs sm:text-sm font-bold transition-all ${
             subTab === 'battle' 
@@ -178,19 +176,19 @@ export function renderGoatLeaderboard(entries, searchQuery, sortBy, subTab, goat
         </div>
       </div>
 
-      ${subTab === 'battle' ? renderGoatBattleView(goatManager, storage) : renderGoatRankingsView(filtered, top3, searchQuery, sortBy)}
+      ${subTab === 'battle' ? renderGoatBattleView(goatManager, storage) : renderGoatRankingsView(filtered, top3, searchQuery)}
 
     </div>
   `;
 }
 
-function renderGoatRankingsView(filtered, top3, searchQuery, sortBy) {
+function renderGoatRankingsView(filtered, top3, searchQuery) {
   return `
-    <!-- Top 3 All-Time Podium with Mobile Order Fix -->
+    <!-- Top 3 All-Time Podium -->
     ${top3.length >= 3 && !searchQuery ? `
       <div class="flex flex-col md:grid md:grid-cols-3 gap-6 items-end pt-6 pb-2">
         
-        <!-- 1st Place GOAT (Order 1 on mobile, Order 2 / Middle on desktop) -->
+        <!-- 1st Place GOAT -->
         <div class="w-full order-1 md:order-2 podium-1 rounded-3xl p-8 relative cursor-pointer glass-panel-hover transform md:-translate-y-4" data-entry-id="${top3[0].id}">
           <div class="absolute -top-5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500 text-slate-950 font-black px-6 py-1.5 rounded-full text-xs font-mono tracking-widest shadow-lg shadow-amber-500/40 animate-pulse">
             👑 ALL-TIME #1 GOAT
@@ -202,15 +200,13 @@ function renderGoatRankingsView(filtered, top3, searchQuery, sortBy) {
             <div>
               <h3 class="font-cinzel text-xl sm:text-2xl font-black text-amber-300">${top3[0].title}</h3>
             </div>
-            <div class="flex justify-center items-center space-x-4 bg-slate-950/80 p-3 rounded-2xl border border-amber-500/40 text-base font-mono">
-              <span class="text-emerald-400 font-extrabold">${top3[0].wins || 0} Wins</span>
-              <span class="text-slate-500">•</span>
-              <span class="text-rose-400 font-bold">${top3[0].losses || 0} Losses</span>
+            <div class="flex justify-center items-center bg-slate-950/80 p-3 rounded-2xl border border-amber-500/40 text-base font-mono">
+              <span class="text-amber-400 font-extrabold text-lg">⚡ ${calculateElo(top3[0].wins, top3[0].losses)} ELO</span>
             </div>
           </div>
         </div>
 
-        <!-- 2nd Place (Order 2 on mobile, Order 1 / Left on desktop) -->
+        <!-- 2nd Place -->
         <div class="w-full order-2 md:order-1 podium-2 rounded-3xl p-6 relative cursor-pointer glass-panel-hover" data-entry-id="${top3[1].id}">
           <div class="absolute -top-4 left-1/2 -translate-x-1/2 bg-slate-300 text-slate-950 font-bold px-4 py-1 rounded-full text-xs font-mono tracking-widest shadow-md">
             🥈 ALL-TIME #2
@@ -222,15 +218,13 @@ function renderGoatRankingsView(filtered, top3, searchQuery, sortBy) {
             <div>
               <h3 class="font-cinzel text-lg font-bold text-white">${top3[1].title}</h3>
             </div>
-            <div class="flex justify-center items-center space-x-3 bg-slate-950/60 p-2.5 rounded-xl border border-white/10 text-sm font-mono">
-              <span class="text-emerald-400 font-bold">${top3[1].wins || 0} Wins</span>
-              <span class="text-slate-500">•</span>
-              <span class="text-rose-400">${top3[1].losses || 0} Losses</span>
+            <div class="flex justify-center items-center bg-slate-950/60 p-2.5 rounded-xl border border-white/10 text-sm font-mono">
+              <span class="text-slate-200 font-bold">⚡ ${calculateElo(top3[1].wins, top3[1].losses)} ELO</span>
             </div>
           </div>
         </div>
 
-        <!-- 3rd Place (Order 3 on mobile, Order 3 / Right on desktop) -->
+        <!-- 3rd Place -->
         <div class="w-full order-3 md:order-3 podium-3 rounded-3xl p-6 relative cursor-pointer glass-panel-hover" data-entry-id="${top3[2].id}">
           <div class="absolute -top-4 left-1/2 -translate-x-1/2 bg-amber-800 text-amber-100 font-bold px-4 py-1 rounded-full text-xs font-mono tracking-widest shadow-md">
             🥉 ALL-TIME #3
@@ -242,10 +236,8 @@ function renderGoatRankingsView(filtered, top3, searchQuery, sortBy) {
             <div>
               <h3 class="font-cinzel text-lg font-bold text-white">${top3[2].title}</h3>
             </div>
-            <div class="flex justify-center items-center space-x-3 bg-slate-950/60 p-2.5 rounded-xl border border-white/10 text-sm font-mono">
-              <span class="text-emerald-400 font-bold">${top3[2].wins || 0} Wins</span>
-              <span class="text-slate-500">•</span>
-              <span class="text-rose-400">${top3[2].losses || 0} Losses</span>
+            <div class="flex justify-center items-center bg-slate-950/60 p-2.5 rounded-xl border border-white/10 text-sm font-mono">
+              <span class="text-amber-500 font-bold">⚡ ${calculateElo(top3[2].wins, top3[2].losses)} ELO</span>
             </div>
           </div>
         </div>
@@ -253,23 +245,17 @@ function renderGoatRankingsView(filtered, top3, searchQuery, sortBy) {
       </div>
     ` : ''}
 
-    <!-- Search & Sort Controls -->
-    <div class="glass-panel p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
+    <!-- Search Controls -->
+    <div class="glass-panel p-4 rounded-2xl flex items-center justify-between">
       <div class="relative w-full sm:w-80">
         <input 
           type="text" 
           id="goat-search-input" 
           placeholder="Search all-time GOATs..." 
-          value="${searchQuery}" 
+          value="${searchQuery || ''}" 
           class="w-full bg-slate-950/80 border border-white/15 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-white placeholder-gray-500 focus:outline-none focus:border-amber-500"
         />
       </div>
-
-      <select id="goat-sort-select" class="w-full sm:w-auto bg-slate-950/80 border border-white/15 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-amber-300 font-mono focus:outline-none focus:border-amber-500">
-        <option value="wins" ${sortBy === 'wins' ? 'selected' : ''}>Sort by Most Wins</option>
-        <option value="winrate" ${sortBy === 'winrate' ? 'selected' : ''}>Sort by Win Rate %</option>
-        <option value="votes" ${sortBy === 'votes' ? 'selected' : ''}>Sort by Total Votes</option>
-      </select>
     </div>
 
     <!-- Master Table -->
@@ -281,7 +267,7 @@ function renderGoatRankingsView(filtered, top3, searchQuery, sortBy) {
             <p class="text-base font-bold text-white">No All-Time GOATs found.</p>
           </div>
         ` : filtered.map((entry, idx) => {
-          const winRate = entry.totalVotes ? Math.round((entry.wins / entry.totalVotes) * 100) : 0;
+          const elo = calculateElo(entry.wins, entry.losses);
           const rank = idx + 1;
 
           return `
@@ -309,24 +295,9 @@ function renderGoatRankingsView(filtered, top3, searchQuery, sortBy) {
                 </div>
               </div>
 
-              <div class="flex items-center space-x-4 sm:space-x-8 shrink-0">
-                <div class="hidden md:block w-36 space-y-1">
-                  <div class="flex justify-between text-xs font-mono">
-                    <span class="text-slate-400">Win Rate</span>
-                    <span class="text-emerald-400 font-bold">${winRate}%</span>
-                  </div>
-                  <div class="w-full h-2.5 bg-slate-950 rounded-full overflow-hidden border border-white/5">
-                    <div class="h-full bg-gradient-to-r from-emerald-600 to-emerald-400 rounded-full" style="width: ${winRate}%"></div>
-                  </div>
-                </div>
-
-                <div class="text-right">
-                  <div class="text-sm sm:text-lg font-mono font-black text-emerald-400 bg-emerald-500/10 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl border border-emerald-500/30">
-                    ${entry.wins || 0}W <span class="text-slate-500 text-xs">/</span> <span class="text-rose-400">${entry.losses || 0}L</span>
-                  </div>
-                  <div class="text-[10px] font-mono text-slate-400 mt-1">
-                    ${entry.totalVotes || 0} total votes
-                  </div>
+              <div class="flex items-center shrink-0">
+                <div class="text-sm sm:text-lg font-mono font-black text-amber-300 bg-amber-500/10 px-4 py-2 rounded-xl border border-amber-500/30">
+                  ⚡ ${elo} ELO
                 </div>
               </div>
 
@@ -385,16 +356,8 @@ function renderGoatBattleView(manager, storage) {
             ${champion.title}
           </h2>
 
-          <div class="flex justify-center space-x-6 max-w-xs mx-auto bg-slate-950/80 p-4 rounded-2xl border border-white/10 font-mono text-sm mb-8">
-            <div>
-              <span class="text-xs text-slate-400 block uppercase">TOTAL WINS</span>
-              <strong class="text-emerald-400 text-xl font-bold">${champion.wins || 0}</strong>
-            </div>
-            <div class="w-px bg-white/10"></div>
-            <div>
-              <span class="text-xs text-slate-400 block uppercase">LOSSES</span>
-              <strong class="text-rose-400 text-xl font-bold">${champion.losses || 0}</strong>
-            </div>
+          <div class="flex justify-center items-center max-w-xs mx-auto bg-slate-950/80 p-4 rounded-2xl border border-amber-500/40 font-mono text-sm mb-8">
+            <span class="text-amber-400 font-extrabold text-xl">⚡ ${calculateElo(champion.wins, champion.losses)} ELO</span>
           </div>
         </div>
       </div>
