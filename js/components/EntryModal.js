@@ -25,8 +25,9 @@ export function renderEntryModal(entry) {
         </div>
 
         <div class="p-6 sm:p-8">
-          <div class="flex justify-center items-center bg-slate-950/80 p-4 rounded-2xl border border-amber-500/40 text-center font-mono">
-            <span class="text-amber-400 font-extrabold text-2xl">⚡ ${elo} ELO</span>
+          <div class="text-center bg-slate-950/80 p-5 rounded-2xl border border-amber-500/40 font-mono space-y-1">
+            <div class="text-amber-400 font-extrabold text-2xl">🎭 ${elo} LARP Rating</div>
+            <div class="text-xs text-slate-400 font-mono">${entry.wins || 0} Wins / ${entry.losses || 0} Losses</div>
           </div>
         </div>
 

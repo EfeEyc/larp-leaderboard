@@ -234,7 +234,7 @@ export function renderAdminPortal(storage, isAuthenticated, pendingBatchDriveIte
               <tr class="border-b border-white/10 text-slate-400 uppercase tracking-wider">
                 <th class="py-3 px-4">LARPer</th>
                 <th class="py-3 px-4">Assigned Week</th>
-                <th class="py-3 px-4">Elo Rating</th>
+                <th class="py-3 px-4">LARP Rating</th>
                 <th class="py-3 px-4 text-right">Actions</th>
               </tr>
             </thead>
@@ -256,7 +256,10 @@ export function renderAdminPortal(storage, isAuthenticated, pendingBatchDriveIte
                         `).join('')}
                       </select>
                     </td>
-                    <td class="py-3 px-4 text-amber-300 font-bold font-mono">⚡ ${calculateElo(e.wins, e.losses)} ELO</td>
+                    <td class="py-3 px-4 font-mono">
+                      <span class="text-amber-300 font-bold">🎭 ${calculateElo(e.wins, e.losses)}</span>
+                      <span class="text-[10px] text-slate-500 ml-1">(${e.wins || 0}W / ${e.losses || 0}L)</span>
+                    </td>
                     <td class="py-3 px-4 text-right">
                       <button class="btn-delete-entry px-3 py-1 bg-red-950 hover:bg-red-900 border border-red-500/40 text-red-300 rounded-lg" data-entry-id="${e.id}">
                         Delete

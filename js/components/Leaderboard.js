@@ -24,7 +24,7 @@ export function renderLeaderboard(entries, filterCategory, searchQuery) {
           HALL OF CHAMPIONS
         </h2>
         <p class="text-slate-400 max-w-xl mx-auto text-sm sm:text-base font-light">
-          Weekly leaderboard ranked by Elo rating system.
+          Weekly leaderboard ranked by LARP Rating.
         </p>
       </div>
 
@@ -44,8 +44,9 @@ export function renderLeaderboard(entries, filterCategory, searchQuery) {
               <div>
                 <h3 class="font-cinzel text-xl sm:text-2xl font-black text-amber-300">${top3[0].title}</h3>
               </div>
-              <div class="flex justify-center items-center bg-slate-950/80 p-3 rounded-2xl border border-amber-500/40 text-base font-mono">
-                <span class="text-amber-400 font-extrabold text-lg">⚡ ${calculateElo(top3[0].wins, top3[0].losses)} ELO</span>
+              <div class="text-center bg-slate-950/80 p-3 rounded-2xl border border-amber-500/40 font-mono space-y-1">
+                <div class="text-amber-400 font-extrabold text-base sm:text-lg">🎭 ${calculateElo(top3[0].wins, top3[0].losses)} LARP Rating</div>
+                <div class="text-[11px] text-slate-400 font-mono">${top3[0].wins || 0}W / ${top3[0].losses || 0}L</div>
               </div>
             </div>
           </div>
@@ -62,8 +63,9 @@ export function renderLeaderboard(entries, filterCategory, searchQuery) {
               <div>
                 <h3 class="font-cinzel text-lg font-bold text-white">${top3[1].title}</h3>
               </div>
-              <div class="flex justify-center items-center bg-slate-950/60 p-2.5 rounded-xl border border-white/10 text-sm font-mono">
-                <span class="text-slate-200 font-bold">⚡ ${calculateElo(top3[1].wins, top3[1].losses)} ELO</span>
+              <div class="text-center bg-slate-950/60 p-2.5 rounded-xl border border-white/10 font-mono space-y-0.5">
+                <div class="text-slate-200 font-bold text-sm">🎭 ${calculateElo(top3[1].wins, top3[1].losses)} LARP Rating</div>
+                <div class="text-[10px] text-slate-400 font-mono">${top3[1].wins || 0}W / ${top3[1].losses || 0}L</div>
               </div>
             </div>
           </div>
@@ -80,8 +82,9 @@ export function renderLeaderboard(entries, filterCategory, searchQuery) {
               <div>
                 <h3 class="font-cinzel text-lg font-bold text-white">${top3[2].title}</h3>
               </div>
-              <div class="flex justify-center items-center bg-slate-950/60 p-2.5 rounded-xl border border-white/10 text-sm font-mono">
-                <span class="text-amber-500 font-bold">⚡ ${calculateElo(top3[2].wins, top3[2].losses)} ELO</span>
+              <div class="text-center bg-slate-950/60 p-2.5 rounded-xl border border-white/10 font-mono space-y-0.5">
+                <div class="text-amber-500 font-bold text-sm">🎭 ${calculateElo(top3[2].wins, top3[2].losses)} LARP Rating</div>
+                <div class="text-[10px] text-slate-400 font-mono">${top3[2].wins || 0}W / ${top3[2].losses || 0}L</div>
               </div>
             </div>
           </div>
@@ -141,9 +144,12 @@ export function renderLeaderboard(entries, filterCategory, searchQuery) {
                   </div>
                 </div>
 
-                <div class="flex items-center shrink-0">
-                  <div class="text-sm sm:text-lg font-mono font-black text-amber-300 bg-amber-500/10 px-4 py-2 rounded-xl border border-amber-500/30">
-                    ⚡ ${elo} ELO
+                <div class="text-right shrink-0">
+                  <div class="text-sm sm:text-base font-mono font-black text-amber-300 bg-amber-500/10 px-3.5 py-1.5 rounded-xl border border-amber-500/30 inline-block">
+                    🎭 ${elo} LARP Rating
+                  </div>
+                  <div class="text-[11px] font-mono text-slate-400 mt-1">
+                    ${entry.wins || 0}W / ${entry.losses || 0}L
                   </div>
                 </div>
 
